@@ -15,7 +15,7 @@ Using minimal dependencies.
 let aspect_ratio: f64 = 3.0 / 2.0;
 let image_width = 800;
 let image_height = (image_width as f64 / aspect_ratio) as i32;
-let samples_per_pixel = 1;
+let samples_per_pixel = 500;
 let max_depth = 50;
 ```
 ![Ray Tracing in One Week Final Image](/images/book1.png)
