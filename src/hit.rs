@@ -5,6 +5,7 @@ use crate::ray::Ray;
 use crate::vec3::{Color, Point3, random_in_unit_sphere, random_unit_vector, Vec3};
 
 use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -12,7 +13,7 @@ pub struct HitRecord {
     normal: Vec3,
     t: f64,
     front_face: bool,
-    mat_ptr: Rc<Box<dyn Material>>,
+    mat_ptr: Arc<Box<dyn Material>>,
 }
 
 impl HitRecord {
@@ -21,7 +22,7 @@ impl HitRecord {
         normal: Vec3,
         t: f64,
         front_face: bool,
-        material: Rc<Box<dyn Material>>,
+        material: Arc<Box<dyn Material>>,
     ) -> HitRecord {
         HitRecord {
             p,
@@ -48,8 +49,8 @@ impl HitRecord {
         return self.front_face;
     }
 
-    pub fn get_material(&self) -> Rc<Box<dyn Material>> {
-        Rc::clone(&self.mat_ptr)
+    pub fn get_material(&self) -> Arc<Box<dyn Material>> {
+        Arc::clone(&self.mat_ptr)
     }
 
     fn create_normal_face(r: &Ray, outward_normal: &Vec3) -> (Vec3, bool) {
@@ -60,20 +61,22 @@ impl HitRecord {
             -*outward_normal
         }, front_face)
     }
+
+
 }
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 }
 
 pub struct Sphere {
     center: Point3,
     radius: f64,
-    mat_ptr: Rc<Box<dyn Material>>,
+    mat_ptr: Arc<Box<dyn Material>>,
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, mat_ptr: Rc<Box<dyn Material>>) -> Sphere {
+    pub fn new(center: Point3, radius: f64, mat_ptr: Arc<Box<dyn Material>>) -> Sphere {
         Sphere {
             center,
             radius,
@@ -107,14 +110,14 @@ impl Hittable for Sphere {
         let (normal, front_face) = HitRecord::create_normal_face(r, &outward_normal);
 
 
-        Some(HitRecord::new(p, normal, t, front_face, Rc::clone(&self.mat_ptr)))
+        Some(HitRecord::new(p, normal, t, front_face, Arc::clone(&self.mat_ptr)))
         // TODO return an option here?
 
     }
 }
 
 pub struct HittableList {
-    objects: Vec<Rc<Box<dyn Hittable>>>,
+    objects: Vec<Arc<Box<dyn Hittable>>>,
 }
 
 impl HittableList {
@@ -122,8 +125,8 @@ impl HittableList {
         HittableList { objects: vec![] }
     }
 
-    pub fn add(&mut self, object: Rc<Box<dyn Hittable>>) {
-        self.objects.push(Rc::clone(&object));
+    pub fn add(&mut self, object: Arc<Box<dyn Hittable>>) {
+        self.objects.push(Arc::clone(&object));
     }
 }
 
@@ -132,8 +135,8 @@ impl Hittable for HittableList {
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
 
-        let temp_mat: Rc<Box<dyn Material>> =
-            Rc::new(Box::new(Metal::new(Vec3::new(0, 0, 0), 0.0)));
+        let temp_mat: Arc<Box<dyn Material>> =
+            Arc::new(Box::new(Metal::new(Vec3::new(0, 0, 0), 0.0)));
         let mut temp_rec =
             HitRecord::new(Vec3::new(0, 0, 0), Vec3::new(0, 0, 0), 0.0, false, temp_mat);
         for object in self.objects.iter() {
@@ -154,7 +157,7 @@ impl Hittable for HittableList {
     }
 }
 
-pub trait Material {
+pub trait Material: Send + Sync {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
 }
 
