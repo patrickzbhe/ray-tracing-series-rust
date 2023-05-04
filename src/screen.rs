@@ -31,7 +31,7 @@ impl Screen {
         let mut stdout = std::io::stdout().lock();
         writeln!(stdout, "P3\n{} {}\n255", self.width, self.height).unwrap();
         for j in (0..self.height).rev() {
-            for i in (0..self.width) {
+            for i in 0..self.width {
                 writeln!(stdout, "{}", self.get(j, i).get_color()).unwrap();
             }
         }
