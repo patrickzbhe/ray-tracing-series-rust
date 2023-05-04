@@ -1,10 +1,6 @@
-
-use rand::{thread_rng, Rng};
-
 use crate::ray::Ray;
-use crate::vec3::{Color, Point3, random_in_unit_sphere, random_unit_vector, Vec3};
-
-use std::rc::Rc;
+use crate::vec3::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
+use rand::{thread_rng, Rng};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -55,14 +51,15 @@ impl HitRecord {
 
     fn create_normal_face(r: &Ray, outward_normal: &Vec3) -> (Vec3, bool) {
         let front_face = r.direction().dot(outward_normal) < 0.0;
-        (if front_face {
-            *outward_normal
-        } else {
-            -*outward_normal
-        }, front_face)
+        (
+            if front_face {
+                *outward_normal
+            } else {
+                -*outward_normal
+            },
+            front_face,
+        )
     }
-
-
 }
 
 pub trait Hittable: Send + Sync {
@@ -109,10 +106,14 @@ impl Hittable for Sphere {
         let outward_normal = (p - self.center) / self.radius;
         let (normal, front_face) = HitRecord::create_normal_face(r, &outward_normal);
 
-
-        Some(HitRecord::new(p, normal, t, front_face, Arc::clone(&self.mat_ptr)))
+        Some(HitRecord::new(
+            p,
+            normal,
+            t,
+            front_face,
+            Arc::clone(&self.mat_ptr),
+        ))
         // TODO return an option here?
-
     }
 }
 
@@ -146,8 +147,8 @@ impl Hittable for HittableList {
                     closest_so_far = rec.t;
                     temp_rec = rec.clone();
                 }
-                None => ()
-            }    
+                None => (),
+            }
         }
         if hit_anything {
             Some(temp_rec)

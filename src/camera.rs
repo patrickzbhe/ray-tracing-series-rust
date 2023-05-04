@@ -1,6 +1,5 @@
-
 use crate::ray::Ray;
-use crate::vec3::{Point3, random_in_unit_disk, Vec3};
+use crate::vec3::{random_in_unit_disk, Point3, Vec3};
 
 pub struct Camera {
     origin: Point3,

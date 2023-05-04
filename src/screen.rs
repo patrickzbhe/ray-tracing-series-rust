@@ -1,6 +1,5 @@
-use crate::vec3::{Color};
+use crate::vec3::Color;
 use std::io::Write;
-
 
 pub struct Screen {
     width: usize,

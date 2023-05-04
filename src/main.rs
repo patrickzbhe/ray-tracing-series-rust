@@ -6,11 +6,10 @@ use ray_tracing_series_rust::hit::{
 use ray_tracing_series_rust::ray::Ray;
 use ray_tracing_series_rust::screen::Screen;
 use ray_tracing_series_rust::vec3::{random, random_range, Color, Vec3};
-use std::rc::Rc;
 use std::sync::mpsc::channel;
+use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
-use std::sync::{Arc};
 
 const THREADS: usize = 10;
 
@@ -89,7 +88,11 @@ fn gen_random_scene() -> Box<dyn Hittable + Sync> {
     let m3: Arc<Box<dyn Material>> = Arc::new(Box::new(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)));
 
     list.add(Arc::new(Box::new(Sphere::new(Vec3::new(0, 1, 0), 1.0, m1))));
-    list.add(Arc::new(Box::new(Sphere::new(Vec3::new(-4, 1, 0), 1.0, m2))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(-4, 1, 0),
+        1.0,
+        m2,
+    ))));
     list.add(Arc::new(Box::new(Sphere::new(Vec3::new(4, 1, 0), 1.0, m3))));
 
     let world: Box<dyn Hittable + Sync> = Box::new(list);
@@ -133,23 +136,6 @@ fn main() {
 
     let mut screen = Screen::new(image_width as usize, image_height as usize);
 
-    // for j in (0..image_height).rev() {
-    //     eprint!("\rScanlines remaining: {j} ");
-    //     for i in 0..image_width {
-    //         let mut pixel = Vec3::new(0, 0, 0);
-    //         for _ in 0..samples_per_pixel {
-    //             let u = (i as f64 + rng.gen::<f64>()) / (image_width - 1) as f64;
-    //             let v = (j as f64 + rng.gen::<f64>()) / (image_height - 1) as f64;
-    //             let r = cam.get_ray(u, v);
-    //             pixel += ray_color(&r, &world, max_depth);
-    //         }
-    //         screen.update(
-    //             j as usize,
-    //             i as usize,
-    //             pixel.get_normalized_color(samples_per_pixel),
-    //         );
-    //     }
-    // }
     let chunk_size = image_height as usize / THREADS;
 
     for t in 0..THREADS {
@@ -161,11 +147,10 @@ fn main() {
         let rand1 = rng.gen::<f64>();
         let rand2 = rng.gen::<f64>();
         eprintln!("Thread starting at {} {}", start, end);
-        
+
         thread::spawn(move || {
             for j in start..end {
                 for i in 0..image_width {
-          
                     let mut pixel = Vec3::new(0, 0, 0);
                     for _ in 0..samples_per_pixel {
                         let u = (i as f64 + rand1) / (image_width - 1) as f64;
@@ -173,7 +158,13 @@ fn main() {
                         let r = shared_cam.get_ray(u, v);
                         pixel += ray_color(&r, shared_world.as_ref(), max_depth);
                     }
-                    send_clone.send((j as usize,i as usize,pixel.get_normalized_color(samples_per_pixel))).unwrap();
+                    send_clone
+                        .send((
+                            j as usize,
+                            i as usize,
+                            pixel.get_normalized_color(samples_per_pixel),
+                        ))
+                        .unwrap();
                 }
             }
         });
@@ -184,8 +175,12 @@ fn main() {
     loop {
         loops += 1;
         match receiver.recv() {
-            Ok((j,i,color)) => {screen.update(j,i,color);}
-            Err(_) => {break;}
+            Ok((j, i, color)) => {
+                screen.update(j, i, color);
+            }
+            Err(_) => {
+                break;
+            }
         }
         if (loops % 10000) == 0 {
             eprintln!("\rDone {} many loops out of {}", loops, total);
