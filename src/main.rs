@@ -1,16 +1,17 @@
 use rand::{thread_rng, Rng};
 use ray_tracing_series_rust::camera::Camera;
 use ray_tracing_series_rust::hit::{
-    Dielectric, HitRecord, Hittable, HittableList, Lambertian, Material, Metal, Sphere,
+    Dielectric, Hittable, HittableList, Lambertian, Material, Metal, Sphere,
 };
 use ray_tracing_series_rust::ray::Ray;
+use ray_tracing_series_rust::screen::Screen;
 use ray_tracing_series_rust::vec3::{random, random_range, Color, Vec3};
 use std::rc::Rc;
 use std::time::Instant;
 
 fn ray_color(&r: &Ray, world: &Box<dyn Hittable>, mut depth: i32) -> Color {
     // TODO: make this iterative instead of recursive
-    let mut product = Vec3::new(1,1,1);
+    let mut product = Vec3::new(1, 1, 1);
     let mut current_ray = r;
 
     loop {
@@ -29,7 +30,8 @@ fn ray_color(&r: &Ray, world: &Box<dyn Hittable>, mut depth: i32) -> Color {
             None => {
                 let unit_direction = current_ray.direction().unit();
                 let t = 0.5 * (unit_direction.y() + 1.0);
-                product *= (1 as f64 - t) * Vec3::new(1, 1, 1) as Color + t * Vec3::new(0.5, 0.7, 1) as Color;
+                product *= (1 as f64 - t) * Vec3::new(1, 1, 1) as Color
+                    + t * Vec3::new(0.5, 0.7, 1) as Color;
                 break;
             }
         }
@@ -90,6 +92,7 @@ fn gen_random_scene() -> Box<dyn Hittable> {
 }
 
 fn main() {
+    // timer
     let start = Instant::now();
 
     // random
@@ -99,7 +102,7 @@ fn main() {
     let aspect_ratio: f64 = 3.0 / 2.0;
     let image_width = 800;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 1;
     let max_depth = 50;
 
     let world = gen_random_scene();
@@ -120,7 +123,8 @@ fn main() {
         dist_to_focus,
     );
 
-    println!("P3\n{image_width} {image_height}\n255");
+    let mut screen = Screen::new(image_width as usize, image_height as usize);
+
     for j in (0..image_height).rev() {
         eprint!("\rScanlines remaining: {j} ");
         for i in 0..image_width {
@@ -131,10 +135,16 @@ fn main() {
                 let r = cam.get_ray(u, v);
                 pixel += ray_color(&r, &world, max_depth);
             }
-            pixel.write_color(samples_per_pixel);
+            screen.update(
+                j as usize,
+                i as usize,
+                pixel.get_normalized_color(samples_per_pixel),
+            );
         }
     }
 
     eprintln!("\nDone!");
+    screen.write_to_ppm();
+
     eprintln!("Time taken: {:.3?}", start.elapsed());
 }

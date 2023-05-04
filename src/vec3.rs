@@ -74,6 +74,36 @@ impl Vec3 {
         );
     }
 
+    pub fn get_normalized_color(&self, samples_per_pixel: u32) -> Color {
+        // TODO: take output stream as param
+        let mut r = self.x();
+        let mut g = self.y();
+        let mut b = self.z();
+
+        let scale = 1.0 / samples_per_pixel as f64;
+        r *= scale;
+        g *= scale;
+        b *= scale;
+        r = f64::sqrt(r);
+        g = f64::sqrt(g);
+        b = f64::sqrt(b);
+        Color::new(
+            (COLOR_MAX * clamp(r, 0.0, 1.0)) as i32,
+            (COLOR_MAX * clamp(g, 0.0, 1.0)) as i32,
+            (COLOR_MAX * clamp(b, 0.0, 1.0)) as i32
+        )
+    }
+
+    pub fn get_color(&self) -> String {
+        let r = self.x();
+        let g = self.y();
+        let b = self.z();
+        format!(
+            "{} {} {}",
+            r,g,b
+        )
+    }
+
     pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
         let cos_theta = f64::min((-*uv).dot(n), 1.0);
         let r_out_perp = etai_over_etat * (*uv + cos_theta * *n);
