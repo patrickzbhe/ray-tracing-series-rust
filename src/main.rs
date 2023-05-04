@@ -8,24 +8,33 @@ use ray_tracing_series_rust::vec3::{random, random_range, Color, Vec3};
 use std::rc::Rc;
 use std::time::Instant;
 
-fn ray_color(&r: &Ray, world: &Box<dyn Hittable>, depth: i32) -> Color {
+fn ray_color(&r: &Ray, world: &Box<dyn Hittable>, mut depth: i32) -> Color {
     // TODO: make this iterative instead of recursive
-    if depth <= 0 {
-        return Vec3::new(0, 0, 0);
-    }
+    let mut product = Vec3::new(1,1,1);
+    let mut current_ray = r;
 
-    match world.hit(&r, 0.001, f64::INFINITY) {
-        Some(rec) => match rec.get_material().scatter(&r, &rec) {
-            Some((scattered, attenuation)) => {
-                return attenuation * ray_color(&scattered, world, depth - 1);
+    loop {
+        depth -= 1;
+        if depth < 0 {
+            return Vec3::new(0, 0, 0);
+        }
+        match world.hit(&current_ray, 0.001, f64::INFINITY) {
+            Some(rec) => match rec.get_material().scatter(&current_ray, &rec) {
+                Some((scattered, attenuation)) => {
+                    current_ray = scattered;
+                    product *= attenuation;
+                }
+                None => return Vec3::new(0, 0, 0),
+            },
+            None => {
+                let unit_direction = current_ray.direction().unit();
+                let t = 0.5 * (unit_direction.y() + 1.0);
+                product *= (1 as f64 - t) * Vec3::new(1, 1, 1) as Color + t * Vec3::new(0.5, 0.7, 1) as Color;
+                break;
             }
-            None => return Vec3::new(0, 0, 0),
-        },
-        None => (),
+        }
     }
-    let unit_direction = r.direction().unit();
-    let t = 0.5 * (unit_direction.y() + 1.0);
-    (1 as f64 - t) * Vec3::new(1, 1, 1) as Color + t * Vec3::new(0.5, 0.7, 1) as Color
+    product
 }
 
 fn gen_random_scene() -> Box<dyn Hittable> {
