@@ -146,7 +146,6 @@ fn main() {
         let shared_cam = cam.clone();
         let rand1 = rng.gen::<f64>();
         let rand2 = rng.gen::<f64>();
-        eprintln!("Thread starting at {} {}", start, end);
 
         thread::spawn(move || {
             for j in start..end {
