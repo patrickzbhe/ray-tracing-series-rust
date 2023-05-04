@@ -90,7 +90,7 @@ impl Vec3 {
         Color::new(
             (COLOR_MAX * clamp(r, 0.0, 1.0)) as i32,
             (COLOR_MAX * clamp(g, 0.0, 1.0)) as i32,
-            (COLOR_MAX * clamp(b, 0.0, 1.0)) as i32
+            (COLOR_MAX * clamp(b, 0.0, 1.0)) as i32,
         )
     }
 
@@ -98,10 +98,7 @@ impl Vec3 {
         let r = self.x();
         let g = self.y();
         let b = self.z();
-        format!(
-            "{} {} {}",
-            r,g,b
-        )
+        format!("{} {} {}", r, g, b)
     }
 
     pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
