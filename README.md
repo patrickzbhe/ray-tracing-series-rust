@@ -14,12 +14,13 @@ Using minimal dependencies.
 ```Rust
 let aspect_ratio: f64 = 3.0 / 2.0;
 let image_width = 800;
-let image_height = image_width / aspect_ratio as i32;
+let image_height = (image_width as f64 / aspect_ratio) as i32;
 let samples_per_pixel = 1;
 let max_depth = 50;
 ```
 | Version                    | Time (s) |
 |----------------------------|----------|
-| Brute force + stupid stuff | 990.181s |
+| Brute force + stupid stuff | 936.957s |
+| Iterative tracing          | 903.980s |
 
 
