@@ -18,6 +18,7 @@ let image_height = (image_width as f64 / aspect_ratio) as i32;
 let samples_per_pixel = 1;
 let max_depth = 50;
 ```
+![Ray Tracing in One Week Final Image](/images/book1.png)
 | Version                    | Time (s) |
 |----------------------------|----------|
 | Brute force + stupid stuff | 936.957s |
