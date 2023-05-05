@@ -1,10 +1,13 @@
 use rand::{thread_rng, Rng};
+use ray_tracing_series_rust::aabb::Aabb;
+use ray_tracing_series_rust::bvh::{self, BvhNode};
 use ray_tracing_series_rust::camera::Camera;
 use ray_tracing_series_rust::hit::{
-    Dielectric, Hittable, HittableList, Lambertian, Material, Metal, Sphere,
+    Dielectric, Hittable, HittableList, Lambertian, Material, Metal, MovingSphere, Sphere,
 };
 use ray_tracing_series_rust::ray::Ray;
 use ray_tracing_series_rust::screen::Screen;
+use ray_tracing_series_rust::texture::{Checker, Noise};
 use ray_tracing_series_rust::vec3::{random, random_range, Color, Vec3};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
@@ -47,7 +50,9 @@ fn gen_random_scene() -> Box<dyn Hittable + Sync> {
     let mut rng = thread_rng();
     let mut list = HittableList::new();
     let ground: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5))));
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            Checker::from_colors(&Color::new(0.2, 0.3, 0.1), &Color::new(0.9, 0.9, 0.9)),
+        )))));
     list.add(Arc::new(Box::new(Sphere::new(
         Vec3::new(0, -1000, -1),
         1000.0,
@@ -63,17 +68,30 @@ fn gen_random_scene() -> Box<dyn Hittable + Sync> {
             );
 
             if (center - Vec3::new(4, 0.2, 0)).length() > 0.9 {
-                let sphere_material: Box<dyn Material> = if choose_mat < 0.8 {
+                let sphere_material: Box<dyn Material> = if choose_mat < 0.3 {
                     // diffuse
                     let albedo = random() * random();
                     Box::new(Lambertian::new(albedo))
-                } else if choose_mat < 0.95 {
+                } else if choose_mat < 0.6 {
                     let albedo = random_range(0.5, 1.0);
                     let fuzz = rng.gen_range::<f64, std::ops::Range<f64>>(0.0..0.5);
                     Box::new(Metal::new(albedo, fuzz))
                 } else {
                     Box::new(Dielectric::new(1.5))
                 };
+                if choose_mat < 0.8 {
+                    let center2 = center + Vec3::new(0, rng.gen_range(0.0..0.5), 0);
+                    list.add(Arc::new(Box::new(MovingSphere::new(
+                        center,
+                        center2,
+                        0.0,
+                        1.0,
+                        0.2,
+                        Arc::new(sphere_material),
+                    ))));
+                    continue;
+                }
+
                 list.add(Arc::new(Box::new(Sphere::new(
                     center,
                     0.2,
@@ -95,8 +113,124 @@ fn gen_random_scene() -> Box<dyn Hittable + Sync> {
     ))));
     list.add(Arc::new(Box::new(Sphere::new(Vec3::new(4, 1, 0), 1.0, m3))));
 
-    let world: Box<dyn Hittable + Sync> = Box::new(list);
+    let bvhnode = BvhNode::from_list(&list, 0.0, 1.0);
+
+    let world: Box<dyn Hittable + Sync> = Box::new(bvhnode);
+    //let world: Box<dyn Hittable + Sync> = Box::new(list);
     world
+}
+
+fn gen_checkered_sphere() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let ground: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            Checker::from_colors(&Color::new(0.2, 0.3, 0.1), &Color::new(0.9, 0.9, 0.9)),
+        )))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, -10, 0),
+        10.0,
+        ground.clone(),
+    ))));
+
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, 10, 0),
+        10.0,
+        ground,
+    ))));
+
+    Box::new(list)
+}
+
+fn gen_two_perlin() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let ground: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            Noise::new(),
+        )))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, -1000, 0),
+        1000.0,
+        ground.clone(),
+    ))));
+
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, 2, 0),
+        2.0,
+        ground,
+    ))));
+
+    Box::new(list)
+}
+
+
+fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camera>) {
+    // TODO: do something smart, load from file maybe?
+    let aspect_ratio: f64 = 16.0 / 9.0;
+    match config_num {
+        0 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_checkered_sphere());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam);
+        }
+        1 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_two_perlin());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam);
+        }
+        _ => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam);
+        }
+    }
 }
 
 fn main() {
@@ -109,30 +243,14 @@ fn main() {
     let mut rng = thread_rng();
 
     // image
-    let aspect_ratio: f64 = 3.0 / 2.0;
-    let image_width = 800;
+    let aspect_ratio: f64 = 16.0 / 9.0;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 500;
+    let samples_per_pixel = 100;
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
-    let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());
-
-    // camera
-    let lookfrom = Vec3::new(13, 2, 3);
-    let lookat = Vec3::new(0, 0, 0);
-    let vup = Vec3::new(0, 1, 0);
-    let dist_to_focus = 10.0;
-    let aperature = 0.1;
-    let cam = Arc::new(Camera::new(
-        lookfrom,
-        lookat,
-        vup,
-        20.0,
-        aspect_ratio,
-        aperature,
-        dist_to_focus,
-    ));
+    let (world, cam) = get_world_cam(1);
 
     let mut screen = Screen::new(image_width as usize, image_height as usize);
 

@@ -1,6 +1,9 @@
+use crate::aabb::Aabb;
 use crate::ray::Ray;
+use crate::texture::{SolidColor, Texture};
 use crate::vec3::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
 use rand::{thread_rng, Rng};
+use std::f64::consts::PI;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -8,6 +11,8 @@ pub struct HitRecord {
     p: Point3,
     normal: Vec3,
     t: f64,
+    u: f64,
+    v: f64,
     front_face: bool,
     mat_ptr: Arc<Box<dyn Material>>,
 }
@@ -17,6 +22,8 @@ impl HitRecord {
         p: Point3,
         normal: Vec3,
         t: f64,
+        u: f64,
+        v: f64,
         front_face: bool,
         material: Arc<Box<dyn Material>>,
     ) -> HitRecord {
@@ -24,6 +31,8 @@ impl HitRecord {
             p,
             normal,
             t,
+            u,
+            v,
             front_face,
             mat_ptr: material,
         }
@@ -64,6 +73,7 @@ impl HitRecord {
 
 pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
 
 pub struct Sphere {
@@ -79,6 +89,13 @@ impl Sphere {
             radius,
             mat_ptr,
         }
+    }
+
+    pub fn get_sphere_uv(p: &Point3) -> (f64, f64) {
+        //  4.2 ray tracing next week math
+        let theta = f64::acos(-p.y());
+        let phi = f64::atan2(-p.z(), p.x()) + PI;
+        (phi / (2.0 * PI), theta / PI)
     }
 }
 
@@ -105,20 +122,112 @@ impl Hittable for Sphere {
         let p = r.at(t);
         let outward_normal = (p - self.center) / self.radius;
         let (normal, front_face) = HitRecord::create_normal_face(r, &outward_normal);
+        let (u, v) = Sphere::get_sphere_uv(&outward_normal);
 
         Some(HitRecord::new(
             p,
             normal,
             t,
+            u,
+            v,
             front_face,
             Arc::clone(&self.mat_ptr),
         ))
         // TODO return an option here?
     }
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        Some(Aabb::new(
+            self.center - Point3::new(self.radius, self.radius, self.radius),
+            self.center + Point3::new(self.radius, self.radius, self.radius),
+        ))
+    }
+}
+
+pub struct MovingSphere {
+    center0: Point3,
+    center1: Point3,
+    time0: f64,
+    time1: f64,
+    radius: f64,
+    mat_ptr: Arc<Box<dyn Material>>,
+}
+
+impl MovingSphere {
+    pub fn new(
+        center0: Point3,
+        center1: Point3,
+        time0: f64,
+        time1: f64,
+        radius: f64,
+        mat_ptr: Arc<Box<dyn Material>>,
+    ) -> MovingSphere {
+        MovingSphere {
+            center0,
+            center1,
+            time0,
+            time1,
+            radius,
+            mat_ptr,
+        }
+    }
+
+    pub fn get_center(&self, time: f64) -> Point3 {
+        return self.center0
+            + ((time - self.time0) / (self.time1 - self.time0)) * (self.center1 - self.center0);
+    }
+}
+
+impl Hittable for MovingSphere {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let cur_time = self.get_center(r.get_time());
+        let oc = *r.origin() - cur_time;
+        let a = r.direction().length_squared();
+        let half_b = oc.dot(r.direction());
+        let c = oc.length_squared() - self.radius * self.radius;
+        let discriminant = half_b * half_b - a * c;
+        if discriminant < 0.0 {
+            return None;
+        }
+        let sqrtd = f64::sqrt(discriminant);
+
+        let mut root = (-half_b - sqrtd) / a;
+        if root < t_min || t_max < root {
+            root = (-half_b + sqrtd) / a;
+            if root < t_min || t_max < root {
+                return None;
+            }
+        }
+        let t = root;
+        let p = r.at(t);
+        let outward_normal = (p - cur_time) / self.radius;
+        let (normal, front_face) = HitRecord::create_normal_face(r, &outward_normal);
+
+        Some(HitRecord::new(
+            p,
+            normal,
+            t,
+            0.0,
+            0.0,
+            front_face,
+            Arc::clone(&self.mat_ptr),
+        ))
+        // TODO return an option here?
+    }
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        let box0 = Aabb::new(
+            self.get_center(time0) - Point3::new(self.radius, self.radius, self.radius),
+            self.get_center(time0) + Point3::new(self.radius, self.radius, self.radius),
+        );
+        let box1 = Aabb::new(
+            self.get_center(time1) - Point3::new(self.radius, self.radius, self.radius),
+            self.get_center(time1) + Point3::new(self.radius, self.radius, self.radius),
+        );
+        Some(Aabb::surrounding_box(&box0, &box1))
+    }
 }
 
 pub struct HittableList {
-    objects: Vec<Arc<Box<dyn Hittable>>>,
+    objects: Vec<Arc<Box<dyn Hittable + Sync>>>,
 }
 
 impl HittableList {
@@ -126,8 +235,12 @@ impl HittableList {
         HittableList { objects: vec![] }
     }
 
-    pub fn add(&mut self, object: Arc<Box<dyn Hittable>>) {
+    pub fn add(&mut self, object: Arc<Box<dyn Hittable + Sync>>) {
         self.objects.push(Arc::clone(&object));
+    }
+
+    pub fn get_objects(&self) -> &Vec<Arc<Box<dyn Hittable + Sync>>> {
+        &self.objects
     }
 }
 
@@ -138,8 +251,15 @@ impl Hittable for HittableList {
 
         let temp_mat: Arc<Box<dyn Material>> =
             Arc::new(Box::new(Metal::new(Vec3::new(0, 0, 0), 0.0)));
-        let mut temp_rec =
-            HitRecord::new(Vec3::new(0, 0, 0), Vec3::new(0, 0, 0), 0.0, false, temp_mat);
+        let mut temp_rec = HitRecord::new(
+            Vec3::new(0, 0, 0),
+            Vec3::new(0, 0, 0),
+            0.0,
+            0.0,
+            0.0,
+            false,
+            temp_mat,
+        );
         for object in self.objects.iter() {
             match object.hit(&r, t_min, closest_so_far) {
                 Some(rec) => {
@@ -156,6 +276,26 @@ impl Hittable for HittableList {
             None
         }
     }
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        if self.objects.is_empty() {
+            return None;
+        }
+        let mut obj_iter = self.objects.iter();
+        let first = obj_iter.next().unwrap();
+        let temp_box = first.bounding_box(time0, time1);
+        let mut temp_box = match temp_box {
+            Some(a) => a,
+            None => return None,
+        };
+        for obj in obj_iter {
+            let other_box = match obj.bounding_box(time0, time1) {
+                Some(a) => a,
+                None => return None,
+            };
+            temp_box = Aabb::surrounding_box(&temp_box, &other_box);
+        }
+        Some(temp_box)
+    }
 }
 
 pub trait Material: Send + Sync {
@@ -163,17 +303,25 @@ pub trait Material: Send + Sync {
 }
 
 pub struct Lambertian {
-    albedo: Color,
+    albedo: Arc<Box<dyn Texture>>,
 }
 
 impl Lambertian {
     pub fn new(albedo: Color) -> Lambertian {
-        Lambertian { albedo }
+        Lambertian {
+            albedo: Arc::new(Box::new(SolidColor::new(&albedo))),
+        }
+    }
+
+    pub fn from_pointer(texture: Arc<Box<dyn Texture>>) -> Lambertian {
+        Lambertian {
+            albedo: texture.clone(),
+        }
     }
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
         let mut scatter_direction = *rec.get_normal() + random_unit_vector();
 
         // catch degenerate scatter directions
@@ -181,7 +329,10 @@ impl Material for Lambertian {
             scatter_direction = *rec.get_normal();
         }
 
-        Some((Ray::new(rec.get_p(), &scatter_direction), self.albedo))
+        Some((
+            Ray::new(rec.get_p(), &scatter_direction, r_in.get_time()),
+            self.albedo.value(rec.u, rec.v, &rec.p),
+        ))
     }
 }
 
@@ -206,6 +357,7 @@ impl Material for Metal {
         let scattered = Ray::new(
             rec.get_p(),
             &(reflected + self.fuzz * random_in_unit_sphere()),
+            r_in.get_time(),
         );
 
         if scattered.direction().dot(&rec.normal) > 0.0 {
@@ -255,6 +407,6 @@ impl Material for Dielectric {
             Vec3::refract(&unit_direction, &rec.get_normal(), refraction_ratio)
         };
 
-        Some((Ray::new(&rec.p, &direction), attenuation))
+        Some((Ray::new(&rec.p, &direction, r_in.get_time()), attenuation))
     }
 }

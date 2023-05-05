@@ -1,3 +1,5 @@
+use rand::{thread_rng, Rng};
+
 use crate::ray::Ray;
 use crate::vec3::{random_in_unit_disk, Point3, Vec3};
 
@@ -10,6 +12,8 @@ pub struct Camera {
     v: Vec3,
     w: Vec3,
     lens_radius: f64,
+    time1: f64,
+    time2: f64,
 }
 
 impl Camera {
@@ -21,6 +25,8 @@ impl Camera {
         aspect_ratio: f64,
         aperture: f64,
         focus_dist: f64,
+        time1: f64,
+        time2: f64,
     ) -> Camera {
         let theta = f64::to_radians(vfov);
         let h = f64::tan(theta / 2.0);
@@ -45,10 +51,13 @@ impl Camera {
             v,
             w,
             lens_radius: aperture / 2.0,
+            time1,
+            time2,
         }
     }
 
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
+        let mut rng = thread_rng();
         let rd = self.lens_radius * random_in_unit_disk();
         let offset = self.u * rd.x() + self.v * rd.y();
 
@@ -57,6 +66,7 @@ impl Camera {
             &(self.lower_left_corner + s * self.horizontal + t * self.vertical
                 - self.origin
                 - offset),
+            rng.gen_range(self.time1..self.time2),
         )
     }
 }

@@ -1,6 +1,10 @@
+pub mod aabb;
+pub mod bvh;
 pub mod camera;
 pub mod hit;
 pub mod mutil;
+pub mod perlin;
 pub mod ray;
 pub mod screen;
+pub mod texture;
 pub mod vec3;
