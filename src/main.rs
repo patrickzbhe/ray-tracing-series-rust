@@ -7,7 +7,7 @@ use ray_tracing_series_rust::hit::{
 };
 use ray_tracing_series_rust::ray::Ray;
 use ray_tracing_series_rust::screen::Screen;
-use ray_tracing_series_rust::texture::{Checker, Noise};
+use ray_tracing_series_rust::texture::{Checker, Noise, Image};
 use ray_tracing_series_rust::vec3::{random, random_range, Color, Vec3};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
@@ -145,7 +145,28 @@ fn gen_two_perlin() -> Box<dyn Hittable + Sync> {
     let mut list = HittableList::new();
     let ground: Arc<Box<dyn Material>> =
         Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
-            Noise::new(),
+            Noise::new(4.0),
+        )))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, -1000, 0),
+        1000.0,
+        ground.clone(),
+    ))));
+
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, 2, 0),
+        2.0,
+        ground,
+    ))));
+
+    Box::new(list)
+}
+
+fn earth() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let ground: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            Image::from_ppm("test_checker.ppm"),
         )))));
     list.add(Arc::new(Box::new(Sphere::new(
         Vec3::new(0, -1000, 0),
@@ -209,6 +230,27 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             ));
             return (world, cam);
         }
+        2 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(earth());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam);
+        }
         _ => {
             let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());
             // camera
@@ -221,7 +263,7 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
                 lookfrom,
                 lookat,
                 vup,
-                20.0,
+                90.0,
                 aspect_ratio,
                 aperture,
                 dist_to_focus,
@@ -250,7 +292,7 @@ fn main() {
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
-    let (world, cam) = get_world_cam(1);
+    let (world, cam) = get_world_cam(2);
 
     let mut screen = Screen::new(image_width as usize, image_height as usize);
 
