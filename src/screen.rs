@@ -1,7 +1,7 @@
 use crate::vec3::Color;
-use std::io::Write;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::Write;
 
 pub struct Screen {
     width: usize,
@@ -50,7 +50,8 @@ impl Screen {
     pub fn from_ppm(name: &str) -> Screen {
         let mut file = File::open(name).expect("Couldn't open the file");
         let mut contents = String::new();
-        file.read_to_string(&mut contents).expect("Trouble reading file...");
+        file.read_to_string(&mut contents)
+            .expect("Trouble reading file...");
         let mut contents = contents.split("\n");
         contents.next();
         let wh: Vec<&str> = contents.next().unwrap().split(" ").collect();
@@ -60,10 +61,19 @@ impl Screen {
         contents.next();
         for j in (0..height).rev() {
             for i in 0..width {
-                let line: Vec<usize> = contents.next().unwrap().split(" ").map(|e| e.parse::<usize>().unwrap()).collect();
-                pixels[j * width + i] = Color::new(line[0] as f64,line[1] as f64,line[2] as f64);
+                let line: Vec<usize> = contents
+                    .next()
+                    .unwrap()
+                    .split(" ")
+                    .map(|e| e.parse::<usize>().unwrap())
+                    .collect();
+                pixels[j * width + i] = Color::new(line[0] as f64, line[1] as f64, line[2] as f64);
             }
         }
-        Screen { width, height, pixels }
+        Screen {
+            width,
+            height,
+            pixels,
+        }
     }
 }

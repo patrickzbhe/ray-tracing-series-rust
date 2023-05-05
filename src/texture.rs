@@ -1,8 +1,8 @@
 use crate::mutil::clamp;
 use crate::perlin::Perlin;
+use crate::screen::Screen;
 use crate::vec3::{Color, Point3};
 use std::sync::Arc;
-use crate::screen::Screen;
 
 pub trait Texture: Send + Sync {
     fn value(&self, u: f64, v: f64, p: &Point3) -> Color;
@@ -82,20 +82,19 @@ impl Texture for Noise {
         //Color::new(1,1,1) * self.noise.turbulence(&(self.scale * *p), 7)
         Color::new(1, 1, 1)
             * 0.5
-            * (1.0
-                + f64::sin(
-                    self.scale * p.z() + 10.0 * self.noise.turbulence(p, 7),
-                ))
+            * (1.0 + f64::sin(self.scale * p.z() + 10.0 * self.noise.turbulence(p, 7)))
     }
 }
 
 pub struct Image {
-    data: Screen
+    data: Screen,
 }
 
 impl Image {
     pub fn from_ppm(name: &str) -> Image {
-        Image { data: Screen::from_ppm(name) }
+        Image {
+            data: Screen::from_ppm(name),
+        }
     }
 }
 
@@ -110,9 +109,13 @@ impl Texture for Image {
         i = i32::min(i, self.data.get_width() as i32 - 1);
         j = i32::min(j, self.data.get_height() as i32 - 1);
 
-        let color_scale = 1.0/255.0;
+        let color_scale = 1.0 / 255.0;
         let pixel = self.data.get(j as usize, i as usize);
 
-        Color::new(color_scale * pixel.x(), color_scale * pixel.y(), color_scale * pixel.z())
+        Color::new(
+            color_scale * pixel.x(),
+            color_scale * pixel.y(),
+            color_scale * pixel.z(),
+        )
     }
 }

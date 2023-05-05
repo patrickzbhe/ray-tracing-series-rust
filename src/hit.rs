@@ -50,6 +50,14 @@ impl HitRecord {
         return self.t;
     }
 
+    pub fn get_u(&self) -> f64 {
+        return self.u;
+    }
+
+    pub fn get_v(&self) -> f64 {
+        return self.v;
+    }
+
     pub fn get_front_face(&self) -> bool {
         return self.front_face;
     }
@@ -101,7 +109,7 @@ impl Sphere {
 
 impl Hittable for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        let oc = *r.origin() - self.center;
+        let oc = *r.get_origin() - self.center;
         let a = r.direction().length_squared();
         let half_b = oc.dot(r.direction());
         let c = oc.length_squared() - self.radius * self.radius;
@@ -180,7 +188,7 @@ impl MovingSphere {
 impl Hittable for MovingSphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let cur_time = self.get_center(r.get_time());
-        let oc = *r.origin() - cur_time;
+        let oc = *r.get_origin() - cur_time;
         let a = r.direction().length_squared();
         let half_b = oc.dot(r.direction());
         let c = oc.length_squared() - self.radius * self.radius;
@@ -223,6 +231,201 @@ impl Hittable for MovingSphere {
             self.get_center(time1) + Point3::new(self.radius, self.radius, self.radius),
         );
         Some(Aabb::surrounding_box(&box0, &box1))
+    }
+}
+
+pub struct XyRect {
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    k: f64,
+    mat_ptr: Arc<Box<dyn Material>>,
+}
+
+impl XyRect {
+    pub fn new(
+        x0: f64,
+        x1: f64,
+        y0: f64,
+        y1: f64,
+        k: f64,
+        mat_ptr: Arc<Box<dyn Material>>,
+    ) -> XyRect {
+        XyRect {
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            mat_ptr,
+        }
+    }
+}
+
+impl Hittable for XyRect {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let t = (self.k - r.get_origin().z()) / r.direction().z();
+        if t < t_min || t > t_max {
+            return None;
+        }
+        let x = r.get_origin().x() + t * r.direction().x();
+        let y = r.get_origin().y() + t * r.direction().y();
+        if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
+            return None;
+        }
+        let u = (x - self.x0) / (self.x1 - self.x0);
+        let v = (y - self.y0) / (self.y1 - self.y0);
+        let outward_normal = Vec3::new(0, 0, 1);
+        let (normal, front) = HitRecord::create_normal_face(r, &outward_normal);
+
+        let p = r.at(t);
+        Some(HitRecord::new(
+            p,
+            normal,
+            t,
+            u,
+            v,
+            front,
+            self.mat_ptr.clone(),
+        ))
+    }
+
+    fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
+        Some(Aabb::new(
+            Point3::new(self.x0, self.y0, self.k - 0.0001),
+            Point3::new(self.x1, self.y1, self.k + 0.0001),
+        ))
+    }
+}
+
+pub struct XzRect {
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    k: f64,
+    mat_ptr: Arc<Box<dyn Material>>,
+}
+
+impl XzRect {
+    pub fn new(
+        x0: f64,
+        x1: f64,
+        y0: f64,
+        y1: f64,
+        k: f64,
+        mat_ptr: Arc<Box<dyn Material>>,
+    ) -> XzRect {
+        XzRect {
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            mat_ptr,
+        }
+    }
+}
+
+impl Hittable for XzRect {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let t = (self.k - r.get_origin().y()) / r.direction().y();
+        if t < t_min || t > t_max {
+            return None;
+        }
+        let x = r.get_origin().x() + t * r.direction().x();
+        let y = r.get_origin().z() + t * r.direction().z();
+        if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
+            return None;
+        }
+        let u = (x - self.x0) / (self.x1 - self.x0);
+        let v = (y - self.y0) / (self.y1 - self.y0);
+        let outward_normal = Vec3::new(0, 1, 0);
+        let (normal, front) = HitRecord::create_normal_face(r, &outward_normal);
+
+        let p = r.at(t);
+        Some(HitRecord::new(
+            p,
+            normal,
+            t,
+            u,
+            v,
+            front,
+            self.mat_ptr.clone(),
+        ))
+    }
+
+    fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
+        Some(Aabb::new(
+            Point3::new(self.x0, self.k - 0.0001, self.y0, ),
+            Point3::new(self.x1, self.k + 0.0001, self.y1, ),
+        ))
+    }
+}
+
+pub struct YzRect {
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    k: f64,
+    mat_ptr: Arc<Box<dyn Material>>,
+}
+
+impl YzRect {
+    pub fn new(
+        x0: f64,
+        x1: f64,
+        y0: f64,
+        y1: f64,
+        k: f64,
+        mat_ptr: Arc<Box<dyn Material>>,
+    ) -> YzRect {
+        YzRect {
+            x0,
+            x1,
+            y0,
+            y1,
+            k,
+            mat_ptr,
+        }
+    }
+}
+
+impl Hittable for YzRect {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let t = (self.k - r.get_origin().x()) / r.direction().x();
+        if t < t_min || t > t_max {
+            return None;
+        }
+        let x = r.get_origin().y() + t * r.direction().y();
+        let y = r.get_origin().z() + t * r.direction().z();
+        if x < self.x0 || x > self.x1 || y < self.y0 || y > self.y1 {
+            return None;
+        }
+        let u = (x - self.x0) / (self.x1 - self.x0);
+        let v = (y - self.y0) / (self.y1 - self.y0);
+        let outward_normal = Vec3::new(1,0,0);
+        let (normal, front) = HitRecord::create_normal_face(r, &outward_normal);
+
+        let p = r.at(t);
+        Some(HitRecord::new(
+            p,
+            normal,
+            t,
+            u,
+            v,
+            front,
+            self.mat_ptr.clone(),
+        ))
+    }
+
+    fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
+        Some(Aabb::new(
+            Point3::new(self.k - 0.0001, self.x0, self.y0, ),
+            Point3::new(self.k + 0.0001, self.x1, self.y1, ),
+        ))
     }
 }
 
@@ -300,6 +503,9 @@ impl Hittable for HittableList {
 
 pub trait Material: Send + Sync {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)>;
+    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+        Color::new(0, 0, 0)
+    }
 }
 
 pub struct Lambertian {
@@ -408,5 +614,30 @@ impl Material for Dielectric {
         };
 
         Some((Ray::new(&rec.p, &direction, r_in.get_time()), attenuation))
+    }
+}
+
+pub struct DiffuseLight {
+    emit: Arc<Box<dyn Texture>>,
+}
+
+impl DiffuseLight {
+    pub fn new(c: &Color) -> DiffuseLight {
+        DiffuseLight {
+            emit: Arc::new(Box::new(SolidColor::new(c))),
+        }
+    }
+
+    pub fn from_pointer(a: Arc<Box<dyn Texture>>) -> DiffuseLight {
+        DiffuseLight { emit: a.clone() }
+    }
+}
+
+impl Material for DiffuseLight {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+        None
+    }
+    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+        self.emit.value(u, v, p)
     }
 }

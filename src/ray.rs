@@ -16,7 +16,7 @@ impl Ray {
         }
     }
 
-    pub fn origin(&self) -> &Point3 {
+    pub fn get_origin(&self) -> &Point3 {
         &self.origin
     }
 

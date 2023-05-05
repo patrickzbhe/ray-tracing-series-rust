@@ -1,4 +1,4 @@
-use crate::vec3::{Vec3, Point3, random_range};
+use crate::vec3::{random_range, Point3, Vec3};
 use rand::{thread_rng, Rng};
 
 const POINT_COUNT: i32 = 256;
@@ -29,14 +29,12 @@ impl Perlin {
         let u = p.x() - f64::floor(p.x());
         let v = p.y() - f64::floor(p.y());
         let w = p.z() - f64::floor(p.z());
-     
 
         let i = f64::floor(p.x()) as i32;
         let j = f64::floor(p.y()) as i32;
         let k = f64::floor(p.z()) as i32;
-  
 
-        let mut c: [[[Vec3; 2]; 2]; 2] = [[[Vec3::new(0,0,0); 2]; 2]; 2];
+        let mut c: [[[Vec3; 2]; 2]; 2] = [[[Vec3::new(0, 0, 0); 2]; 2]; 2];
         // LMAO
         // TODO fix types
         for di in 0..2 as usize {
@@ -49,7 +47,7 @@ impl Perlin {
                 }
             }
         }
-    
+
         Perlin::trilinear_interp(c, u, v, w)
     }
 
@@ -86,9 +84,9 @@ impl Perlin {
 
     fn trilinear_interp(c: [[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
         // TODO: there is def a more idiomatic way to write this in rust...
-        let uu = u * u * (3.0-2.0 * u);
-        let vv = v * v * (3.0-2.0 * v);
-        let ww = w * w * (3.0-2.0 * w);
+        let uu = u * u * (3.0 - 2.0 * u);
+        let vv = v * v * (3.0 - 2.0 * v);
+        let ww = w * w * (3.0 - 2.0 * w);
         let mut accum = 0.0;
         for i in 0..2 {
             for j in 0..2 {
@@ -96,7 +94,7 @@ impl Perlin {
                     let i1 = i as f64;
                     let j1 = j as f64;
                     let k1 = k as f64;
-                    let weight_v = Vec3::new(u-i as f64, v-j as f64, w-k as f64);
+                    let weight_v = Vec3::new(u - i as f64, v - j as f64, w - k as f64);
                     accum += (i1 * uu + (1.0 - i1) * (1.0 - uu))
                         * (j1 * vv + (1.0 - j1) * (1.0 - vv))
                         * (k1 * ww + (1.0 - k1) * (1.0 - ww))

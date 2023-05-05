@@ -26,19 +26,19 @@ impl Aabb {
             (
                 self.minimum.x(),
                 self.maximum.x(),
-                r.origin().x(),
+                r.get_origin().x(),
                 r.direction().x(),
             ),
             (
                 self.minimum.y(),
                 self.maximum.y(),
-                r.origin().y(),
+                r.get_origin().y(),
                 r.direction().y(),
             ),
             (
                 self.minimum.z(),
                 self.maximum.z(),
-                r.origin().z(),
+                r.get_origin().z(),
                 r.direction().z(),
             ),
         ];
