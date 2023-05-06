@@ -20,14 +20,16 @@ impl Vec3 {
         return self.2;
     }
 
-    pub fn set_x(&mut self, v: f64){
-        self.0 = v;
+    pub fn set_x(&mut self, x:f64) {
+        self.0 = x;
     }
-    pub fn set_y(&mut self, v: f64){
-        self.1 = v;
+
+    pub fn set_y(&mut self, y:f64) {
+        self.1 = y;
     }
-    pub fn set_z(&mut self, v: f64){
-        self.2 = v;
+
+    pub fn set_z(&mut self, z:f64) {
+        self.2 = z;
     }
 
     pub fn length_squared(&self) -> f64 {
