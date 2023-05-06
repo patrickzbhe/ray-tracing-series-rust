@@ -27,15 +27,15 @@ impl BvhNode {
             let box_a = a.bounding_box(0.0, 0.0).unwrap();
             let box_b = b.bounding_box(0.0, 0.0).unwrap();
             match axis {
-                0 => match box_a.get_min().x() < box_b.get_min().x() {
+                0 => match box_a.get_min().get_x() < box_b.get_min().get_x() {
                     true => Ordering::Less,
                     _ => Ordering::Greater,
                 },
-                1 => match box_a.get_min().y() < box_b.get_min().y() {
+                1 => match box_a.get_min().get_y() < box_b.get_min().get_y() {
                     true => Ordering::Less,
                     _ => Ordering::Greater,
                 },
-                2 => match box_a.get_min().z() < box_b.get_min().z() {
+                2 => match box_a.get_min().get_z() < box_b.get_min().get_z() {
                     true => Ordering::Less,
                     _ => Ordering::Greater,
                 },

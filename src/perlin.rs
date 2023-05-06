@@ -26,13 +26,13 @@ impl Perlin {
     }
 
     pub fn noise(&self, p: &Point3) -> f64 {
-        let u = p.x() - f64::floor(p.x());
-        let v = p.y() - f64::floor(p.y());
-        let w = p.z() - f64::floor(p.z());
+        let u = p.get_x() - f64::floor(p.get_x());
+        let v = p.get_y() - f64::floor(p.get_y());
+        let w = p.get_z() - f64::floor(p.get_z());
 
-        let i = f64::floor(p.x()) as i32;
-        let j = f64::floor(p.y()) as i32;
-        let k = f64::floor(p.z()) as i32;
+        let i = f64::floor(p.get_x()) as i32;
+        let j = f64::floor(p.get_y()) as i32;
+        let k = f64::floor(p.get_z()) as i32;
 
         let mut c: [[[Vec3; 2]; 2]; 2] = [[[Vec3::new(0, 0, 0); 2]; 2]; 2];
         // LMAO

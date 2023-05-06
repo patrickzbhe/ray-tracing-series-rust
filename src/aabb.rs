@@ -24,22 +24,22 @@ impl Aabb {
         // the manual loop unroll LMAO
         let intervals = [
             (
-                self.minimum.x(),
-                self.maximum.x(),
-                r.get_origin().x(),
-                r.direction().x(),
+                self.minimum.get_x(),
+                self.maximum.get_x(),
+                r.get_origin().get_x(),
+                r.get_direction().get_x(),
             ),
             (
-                self.minimum.y(),
-                self.maximum.y(),
-                r.get_origin().y(),
-                r.direction().y(),
+                self.minimum.get_y(),
+                self.maximum.get_y(),
+                r.get_origin().get_y(),
+                r.get_direction().get_y(),
             ),
             (
-                self.minimum.z(),
-                self.maximum.z(),
-                r.get_origin().z(),
-                r.direction().z(),
+                self.minimum.get_z(),
+                self.maximum.get_z(),
+                r.get_origin().get_z(),
+                r.get_direction().get_z(),
             ),
         ];
         for (min, max, origin, direction) in intervals {
@@ -61,15 +61,15 @@ impl Aabb {
 
     pub fn surrounding_box(box0: &Aabb, box1: &Aabb) -> Aabb {
         let small = Point3::new(
-            f64::min(box0.get_min().x(), box1.get_min().x()),
-            f64::min(box0.get_min().y(), box1.get_min().y()),
-            f64::min(box0.get_min().z(), box1.get_min().z()),
+            f64::min(box0.get_min().get_x(), box1.get_min().get_x()),
+            f64::min(box0.get_min().get_y(), box1.get_min().get_y()),
+            f64::min(box0.get_min().get_z(), box1.get_min().get_z()),
         );
 
         let big = Point3::new(
-            f64::max(box0.get_max().x(), box1.get_max().x()),
-            f64::max(box0.get_max().y(), box1.get_max().y()),
-            f64::max(box0.get_max().z(), box1.get_max().z()),
+            f64::max(box0.get_max().get_x(), box1.get_max().get_x()),
+            f64::max(box0.get_max().get_y(), box1.get_max().get_y()),
+            f64::max(box0.get_max().get_z(), box1.get_max().get_z()),
         );
 
         Aabb::new(small, big)

@@ -47,7 +47,7 @@ impl Screen {
         }
     }
 
-    pub fn from_ppm(name: &str) -> Screen {
+    pub fn from_ppm_p3(name: &str) -> Screen {
         let mut file = File::open(name).expect("Couldn't open the file");
         let mut contents = String::new();
         file.read_to_string(&mut contents)
@@ -59,15 +59,13 @@ impl Screen {
         let height = wh[1].parse::<usize>().unwrap();
         let mut pixels: Vec<Color> = vec![Color::new(0, 0, 0); height * width];
         contents.next();
-        for j in (0..height).rev() {
+        let nums: Vec<&str> = contents.map(|l| l.split_whitespace()).flatten().collect();
+        let mut num_iter = nums.iter();
+        for j in 0..height {
             for i in 0..width {
-                let line: Vec<usize> = contents
-                    .next()
-                    .unwrap()
-                    .split(" ")
-                    .map(|e| e.parse::<usize>().unwrap())
-                    .collect();
-                pixels[j * width + i] = Color::new(line[0] as f64, line[1] as f64, line[2] as f64);
+                let (x,y,z) = (num_iter.next().unwrap(), num_iter.next().unwrap(), num_iter.next().unwrap());
+                
+                pixels[j * width + i] = Color::new(x.parse::<f64>().unwrap(), y.parse::<f64>().unwrap(), z.parse::<f64>().unwrap());
             }
         }
         Screen {

@@ -53,7 +53,7 @@ impl Checker {
 
 impl Texture for Checker {
     fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
-        let sines = f64::sin(10.0 * p.x()) * f64::sin(10.0 * p.y()) * f64::sin(10.0 * p.z());
+        let sines = f64::sin(10.0 * p.get_x()) * f64::sin(10.0 * p.get_y()) * f64::sin(10.0 * p.get_z());
         if sines < 0.0 {
             self.odd.value(u, v, p)
         } else {
@@ -82,7 +82,7 @@ impl Texture for Noise {
         //Color::new(1,1,1) * self.noise.turbulence(&(self.scale * *p), 7)
         Color::new(1, 1, 1)
             * 0.5
-            * (1.0 + f64::sin(self.scale * p.z() + 10.0 * self.noise.turbulence(p, 7)))
+            * (1.0 + f64::sin(self.scale * p.get_z() + 10.0 * self.noise.turbulence(p, 7)))
     }
 }
 
@@ -93,7 +93,7 @@ pub struct Image {
 impl Image {
     pub fn from_ppm(name: &str) -> Image {
         Image {
-            data: Screen::from_ppm(name),
+            data: Screen::from_ppm_p3(name),
         }
     }
 }
@@ -113,9 +113,9 @@ impl Texture for Image {
         let pixel = self.data.get(j as usize, i as usize);
 
         Color::new(
-            color_scale * pixel.x(),
-            color_scale * pixel.y(),
-            color_scale * pixel.z(),
+            color_scale * pixel.get_x(),
+            color_scale * pixel.get_y(),
+            color_scale * pixel.get_z(),
         )
     }
 }

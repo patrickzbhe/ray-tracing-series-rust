@@ -3,13 +3,13 @@ use ray_tracing_series_rust::aabb::Aabb;
 use ray_tracing_series_rust::bvh::{self, BvhNode};
 use ray_tracing_series_rust::camera::Camera;
 use ray_tracing_series_rust::hit::{
-    Dielectric, DiffuseLight, Hittable, HittableList, Lambertian, Material, Metal, MovingSphere,
-    Sphere, XyRect,
+    ConstantMedium, Dielectric, DiffuseLight, Hittable, HittableList, Lambertian, Material, Metal,
+    MovingSphere, RectPrism, RotateY, Sphere, Translate, XyRect, XzRect, YzRect,
 };
 use ray_tracing_series_rust::ray::Ray;
 use ray_tracing_series_rust::screen::Screen;
-use ray_tracing_series_rust::texture::{Checker, Image, Noise};
-use ray_tracing_series_rust::vec3::{random, random_range, Color, Vec3};
+use ray_tracing_series_rust::texture::{Checker, Image, Noise, SolidColor};
+use ray_tracing_series_rust::vec3::{random, random_range, Color, Point3, Vec3};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Instant;
@@ -178,7 +178,7 @@ fn gen_two_perlin() -> Box<dyn Hittable + Sync> {
 fn earth() -> Box<dyn Hittable + Sync> {
     let mut list = HittableList::new();
     let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(Image::from_ppm("test_checker.ppm")),
+        Box::new(Image::from_ppm("earthshit.ppm")),
     ))));
     list.add(Arc::new(Box::new(Sphere::new(
         Vec3::new(0, -1000, 0),
@@ -234,36 +234,275 @@ fn gen_simple_light() -> Box<dyn Hittable + Sync> {
 
 fn cornell_box() -> Box<dyn Hittable + Sync> {
     let mut list = HittableList::new();
+    let red: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
+    let white: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let green: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
+    let light: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(DiffuseLight::new(&Color::new(15, 15, 15))));
+    list.add(Arc::new(Box::new(YzRect::new(
+        0.0, 555.0, 0.0, 555.0, 555.0, green,
+    ))));
+    list.add(Arc::new(Box::new(YzRect::new(
+        0.0, 555.0, 0.0, 555.0, 0.0, red,
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        213.0, 343.0, 227.0, 332.0, 554.0, light,
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XyRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    ))));
+
+    list.add(Arc::new(Box::new(Translate::new(
+        &Vec3::new(265, 0, 295),
+        Arc::new(Box::new(RotateY::new(
+            15.0,
+            Arc::new(Box::new(RectPrism::new(
+                &Point3::new(0, 0, 0),
+                &Point3::new(165, 330, 165),
+                white.clone(),
+            ))),
+        ))),
+    ))));
+
+    list.add(Arc::new(Box::new(Translate::new(
+        &Vec3::new(130, 0, 65),
+        Arc::new(Box::new(RotateY::new(
+            -18.0,
+            Arc::new(Box::new(RectPrism::new(
+                &Point3::new(0, 0, 0),
+                &Point3::new(165, 165, 165),
+                white.clone(),
+            ))),
+        ))),
+    ))));
+
+    Box::new(list)
+}
+
+fn cornell_smoke() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let red: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
+    let white: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let green: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
+    let light: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(DiffuseLight::new(&Color::new(15, 15, 15))));
+    list.add(Arc::new(Box::new(YzRect::new(
+        0.0, 555.0, 0.0, 555.0, 555.0, green,
+    ))));
+    list.add(Arc::new(Box::new(YzRect::new(
+        0.0, 555.0, 0.0, 555.0, 0.0, red,
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        213.0, 343.0, 227.0, 332.0, 554.0, light,
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XyRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    ))));
+
+    list.add(Arc::new(Box::new(ConstantMedium::from_color(
+        &Color::new(0, 0, 0),
+        0.01,
+        Arc::new(Box::new(Translate::new(
+            &Vec3::new(265, 0, 295),
+            Arc::new(Box::new(RotateY::new(
+                15.0,
+                Arc::new(Box::new(RectPrism::new(
+                    &Point3::new(0, 0, 0),
+                    &Point3::new(165, 330, 165),
+                    white.clone(),
+                ))),
+            ))),
+        ))),
+    ))));
+
+    list.add(Arc::new(Box::new(ConstantMedium::from_color(
+        &Color::new(1, 1, 1),
+        0.01,
+        Arc::new(Box::new(Translate::new(
+            &Vec3::new(130, 0, 65),
+            Arc::new(Box::new(RotateY::new(
+                -18.0,
+                Arc::new(Box::new(RectPrism::new(
+                    &Point3::new(0, 0, 0),
+                    &Point3::new(165, 165, 165),
+                    white.clone(),
+                ))),
+            ))),
+        ))),
+    ))));
+
+    Box::new(list)
+}
+
+fn final_scene() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let mut boxes1 = HittableList::new();
     let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(Noise::new(4.0)),
+        Box::new(SolidColor::new(&Color::new(0.48, 0.83, 0.53))),
+    ))));
+    let boxes_per_side = 20;
+    for i in 0..boxes_per_side {
+        for j in 0..boxes_per_side {
+            let i = i as f64;
+            let j = j as f64;
+            let w = 100.0;
+            let x0 = -1000.0 + i * w;
+            let z0 = -1000.0 + j * w;
+            let y0 = 0.0;
+            let x1 = x0 + w;
+            let y1 = thread_rng().gen_range(1.0..101.0);
+            let z1 = z0 + w;
+            boxes1.add(Arc::new(Box::new(RectPrism::new(
+                &Point3::new(x0, y0, z0),
+                &Point3::new(x1, y1, z1),
+                ground.clone(),
+            ))))
+        }
+    }
+    list.add(Arc::new(Box::new(BvhNode::from_list(&boxes1, 0.0, 1.0))));
+    let light: Arc<Box<dyn Material>> = Arc::new(Box::new(DiffuseLight::new(&Color::new(7, 7, 7))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        123.0, 432.0, 147.0, 412.0, 554.0, light,
+    ))));
+
+    let center1 = Point3::new(400, 400, 400);
+    let center2 = center1 + Vec3::new(30, 0, 0);
+
+    list.add(Arc::new(Box::new(MovingSphere::new(
+        center1,
+        center2,
+        0.0,
+        1.0,
+        50.0,
+        Arc::new(Box::new(Lambertian::new(Color::new(0.7, 0.3, 1)))),
     ))));
     list.add(Arc::new(Box::new(Sphere::new(
-        Vec3::new(0, -1000, 0),
-        1000.0,
+        Point3::new(260, 150, 45),
+        50.0,
+        Arc::new(Box::new(Dielectric::new(1.5))),
+    ))));
+
+    list.add(
+        Arc::new(Box::new(Sphere::new(
+            Point3::new(0,150,145), 50.0, Arc::new(Box::new(
+                Metal::new(Color::new(0.8,0.8,0.9), 1.0)
+            ))
+        )))
+    );
+
+    list.add(Arc::new(Box::new(Sphere::new(
+        Point3::new(360, 150, 145),
+        70.0,
+        Arc::new(Box::new(Dielectric::new(1.5))),
+    ))));
+
+    list.add(Arc::new(Box::new(ConstantMedium::from_color(
+        &Color::new(0.2, 0.4, 0.9),
+        0.2,
+        Arc::new(Box::new(Sphere::new(
+            Point3::new(360, 150, 145),
+            70.0,
+            Arc::new(Box::new(Dielectric::new(1.5))),
+        ))),
+    ))));
+
+    list.add(Arc::new(Box::new(Sphere::new(
+        Point3::new(0, 0, 0),
+        5000.0,
+        Arc::new(Box::new(Dielectric::new(1.5))),
+    ))));
+    list.add(Arc::new(Box::new(ConstantMedium::from_color(
+        &Color::new(1, 1, 1),
+        0.0001,
+        Arc::new(Box::new(Sphere::new(
+            Point3::new(0, 0, 0),
+            5000.0,
+            Arc::new(Box::new(Dielectric::new(1.5))),
+        ))),
+    ))));
+
+    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
+        Box::new(Image::from_ppm("earthshit.ppm")),
+    ))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(400,200,400),
+        100.0,
         ground.clone(),
     ))));
 
     list.add(Arc::new(Box::new(Sphere::new(
-        Vec3::new(0, 2, 0),
-        2.0,
-        ground,
+        Point3::new(220, 280, 300),
+        80.0,
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            Noise::new(0.1),
+        ))))),
     ))));
 
-    let difflight: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(DiffuseLight::new(&Color::new(10, 10, 10))));
-    list.add(Arc::new(Box::new(XyRect::new(
-        3.0,
-        5.0,
-        1.0,
-        3.0,
-        -2.0,
-        difflight.clone(),
-    ))));
-
-    list.add(Arc::new(Box::new(Sphere::new(
-        Vec3::new(0, 10, 0),
-        3.0,
-        difflight,
+    let white: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let mut boxes2 = HittableList::new();
+    let ns = 1000;
+    for _ in 0..ns {
+        boxes2.add(Arc::new(Box::new(Sphere::new(
+            random_range(0.0, 165.0),
+            10.0,
+            white.clone(),
+        ))))
+    }
+    list.add(Arc::new(Box::new(Translate::new(
+        &Vec3::new(-100, 270, 395),
+        Arc::new(Box::new(RotateY::new(
+            15.0,
+            Arc::new(Box::new(BvhNode::from_list(&boxes2, 0.0, 1.0))),
+        ))),
     ))));
 
     Box::new(list)
@@ -281,7 +520,7 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             let lookat = Vec3::new(0, 0, 0);
             let vup = Vec3::new(0, 1, 0);
             let dist_to_focus = 10.0;
-            let aperture = 0.1;
+            let aperture = 0.0;
             let cam = Arc::new(Camera::new(
                 lookfrom,
                 lookat,
@@ -302,7 +541,7 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             let lookat = Vec3::new(0, 0, 0);
             let vup = Vec3::new(0, 1, 0);
             let dist_to_focus = 10.0;
-            let aperture = 0.1;
+            let aperture = 0.0;
             let cam = Arc::new(Camera::new(
                 lookfrom,
                 lookat,
@@ -323,7 +562,7 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             let lookat = Vec3::new(0, 0, 0);
             let vup = Vec3::new(0, 1, 0);
             let dist_to_focus = 10.0;
-            let aperture = 0.1;
+            let aperture = 0.0;
             let cam = Arc::new(Camera::new(
                 lookfrom,
                 lookat,
@@ -345,7 +584,7 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             let lookat = Vec3::new(0, 2, 0);
             let vup = Vec3::new(0, 1, 0);
             let dist_to_focus = 10.0;
-            let aperture = 0.1;
+            let aperture = 0.0;
             let cam = Arc::new(Camera::new(
                 lookfrom,
                 lookat,
@@ -359,6 +598,69 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             ));
             let background = Color::new(0, 0, 0);
             return (world, cam, background);
+        }
+        4 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(cornell_box());
+            // camera
+            let lookfrom = Vec3::new(278, 278, -800);
+            let lookat = Vec3::new(278, 278, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.0;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                40.0,
+                1.0,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam, Color::new(0, 0, 0));
+        }
+        5 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(cornell_smoke());
+            // camera
+            let lookfrom = Vec3::new(278, 278, -800);
+            let lookat = Vec3::new(278, 278, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.0;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                40.0,
+                1.0,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam, Color::new(0, 0, 0));
+        }
+        6 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(final_scene());
+            // camera
+            let lookfrom = Vec3::new(478, 278, -600);
+            let lookat = Vec3::new(278, 278, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.0;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                40.0,
+                1.0,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam, Color::new(0, 0, 0));
         }
         _ => {
             let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());
@@ -394,14 +696,14 @@ fn main() {
     let mut rng = thread_rng();
 
     // image
-    let aspect_ratio: f64 = 16.0 / 9.0;
+    let aspect_ratio: f64 = 1.0;
     let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 400;
+    let samples_per_pixel = 50;
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
-    let (world, cam, background) = get_world_cam(10);
+    let (world, cam, background) = get_world_cam(6);
 
     let mut screen = Screen::new(image_width as usize, image_height as usize);
 
