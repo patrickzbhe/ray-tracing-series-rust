@@ -697,9 +697,9 @@ fn main() {
 
     // image
     let aspect_ratio: f64 = 1.0;
-    let image_width = 400;
+    let image_width = 800;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 50;
+    let samples_per_pixel = 10000;
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
