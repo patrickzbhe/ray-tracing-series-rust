@@ -4,9 +4,11 @@ Implementation (+ additional experimentation) of Peter Shirley's [Ray Tracing in
 
 # Implementation
 
-Starting out by just mostly translating the C++ codebase, then converting it into (somewhat) idiomatic Rust.
-Also adding some random stuff plus performance optimizations, which I'll benchmark.
-Using minimal dependencies.
+Trying to write (somewhat) idiomatic Rust.
+
+Also adding some random stuff (like image buffer, importing/export different file formats, spectral rendering) plus performance optimizations, which I'll benchmark.
+
+Using minimal dependencies (just rand right now).
 
 ## Benchmarking
 ### In One Weekend Final
@@ -38,3 +40,4 @@ let max_depth = 50;
 | Version                    | Time (s) |
 |----------------------------|----------|
 | 10 threads - some bugs? | 12453.138s |
+
