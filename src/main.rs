@@ -1,6 +1,5 @@
 use rand::{thread_rng, Rng};
-use ray_tracing_series_rust::aabb::Aabb;
-use ray_tracing_series_rust::bvh::{self, BvhNode};
+use ray_tracing_series_rust::bvh::BvhNode;
 use ray_tracing_series_rust::camera::Camera;
 use ray_tracing_series_rust::hit::{
     ConstantMedium, Dielectric, DiffuseLight, Hittable, HittableList, Lambertian, Material, Metal,
@@ -13,7 +12,7 @@ use ray_tracing_series_rust::vec3::{random, random_range, Color, Point3, Vec3};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Instant;
-use std::{backtrace, thread};
+use std::thread;
 
 const THREADS: usize = 10;
 const CONFIG_NUM: usize = 4;
@@ -431,13 +430,11 @@ fn final_scene() -> Box<dyn Hittable + Sync> {
         Arc::new(Box::new(Dielectric::new(1.5))),
     ))));
 
-    list.add(
-        Arc::new(Box::new(Sphere::new(
-            Point3::new(0,150,145), 50.0, Arc::new(Box::new(
-                Metal::new(Color::new(0.8,0.8,0.9), 1.0)
-            ))
-        )))
-    );
+    list.add(Arc::new(Box::new(Sphere::new(
+        Point3::new(0, 150, 145),
+        50.0,
+        Arc::new(Box::new(Metal::new(Color::new(0.8, 0.8, 0.9), 1.0))),
+    ))));
 
     list.add(Arc::new(Box::new(Sphere::new(
         Point3::new(360, 150, 145),
@@ -474,7 +471,7 @@ fn final_scene() -> Box<dyn Hittable + Sync> {
         Box::new(Image::from_ppm("earthshit.ppm")),
     ))));
     list.add(Arc::new(Box::new(Sphere::new(
-        Vec3::new(400,200,400),
+        Vec3::new(400, 200, 400),
         100.0,
         ground.clone(),
     ))));
@@ -693,9 +690,6 @@ fn main() {
     // timer
     let start = Instant::now();
 
-    // random
-    let mut rng = thread_rng();
-
     // image
     let aspect_ratio: f64 = 1.0;
     let image_width = 800;
@@ -716,7 +710,6 @@ fn main() {
         let send_clone = sender.clone();
         let shared_world: Arc<Box<dyn Hittable + Sync>> = world.clone();
         let shared_cam = cam.clone();
-  
 
         thread::spawn(move || {
             for j in start..end {

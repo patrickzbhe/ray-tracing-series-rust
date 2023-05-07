@@ -624,14 +624,14 @@ impl Hittable for Translate {
 }
 
 pub struct RotateY {
-    obj: Arc<Box<dyn Hittable  + Send + Sync>>,
+    obj: Arc<Box<dyn Hittable + Send + Sync>>,
     sin_theta: f64,
     cos_theta: f64,
     bbox: Option<Aabb>,
 }
 
 impl RotateY {
-    pub fn new(angle: f64, obj: Arc<Box<dyn Hittable  + Send + Sync>>) -> RotateY {
+    pub fn new(angle: f64, obj: Arc<Box<dyn Hittable + Send + Sync>>) -> RotateY {
         let angle = f64::to_radians(angle);
         let sin_theta = f64::sin(angle);
         let cos_theta = f64::cos(angle);
@@ -701,16 +701,24 @@ impl Hittable for RotateY {
         let p = Vec3::new(
             self.cos_theta * rec.get_p().get_x() + self.sin_theta * rec.get_p().get_z(),
             rec.get_p().get_y(),
-            -self.sin_theta * rec.get_p().get_x() + self.cos_theta * rec.get_p().get_z()
+            -self.sin_theta * rec.get_p().get_x() + self.cos_theta * rec.get_p().get_z(),
         );
 
         let normal = Vec3::new(
             self.cos_theta * rec.get_normal().get_x() + self.sin_theta * rec.get_normal().get_z(),
             rec.get_normal().get_y(),
-            -self.sin_theta * rec.get_normal().get_x() + self.cos_theta * rec.get_normal().get_z()
+            -self.sin_theta * rec.get_normal().get_x() + self.cos_theta * rec.get_normal().get_z(),
         );
         let (normal, front_face) = HitRecord::create_normal_face(&rotated_r, &normal);
-        Some(HitRecord::new(p, normal, rec.get_t(), rec.get_u(), rec.get_v(), front_face, rec.get_material()))
+        Some(HitRecord::new(
+            p,
+            normal,
+            rec.get_t(),
+            rec.get_u(),
+            rec.get_v(),
+            front_face,
+            rec.get_material(),
+        ))
     }
 
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
@@ -725,8 +733,12 @@ pub struct ConstantMedium {
 }
 
 impl ConstantMedium {
-    pub fn from_color(c: &Color, d: f64, b:  Arc<Box<dyn Hittable>>) -> ConstantMedium{
-        ConstantMedium { boundary: b.clone(), phase_function: Arc::new(Box::new(Isotropic::from_color(c))), neg_inv_density: -1.0/d}
+    pub fn from_color(c: &Color, d: f64, b: Arc<Box<dyn Hittable>>) -> ConstantMedium {
+        ConstantMedium {
+            boundary: b.clone(),
+            phase_function: Arc::new(Box::new(Isotropic::from_color(c))),
+            neg_inv_density: -1.0 / d,
+        }
     }
 }
 
@@ -744,16 +756,24 @@ impl Hittable for ConstantMedium {
             t1 = 0.0;
         }
         let ray_length = r.get_direction().length();
-        let distance_inside_boundary = (t2 -t1) * ray_length;
+        let distance_inside_boundary = (t2 - t1) * ray_length;
         let hit_distance = self.neg_inv_density * f64::ln(thread_rng().gen());
         if hit_distance > distance_inside_boundary {
             return None;
         }
         let t = t1 + hit_distance / ray_length;
         let p = r.at(t);
-        let normal = Vec3::new(0,0,0);
+        let normal = Vec3::new(0, 0, 0);
         let front_face = true;
-        Some(HitRecord { p, normal, t, u: 0.0, v: 0.0, front_face, mat_ptr: self.phase_function.clone() })
+        Some(HitRecord {
+            p,
+            normal,
+            t,
+            u: 0.0,
+            v: 0.0,
+            front_face,
+            mat_ptr: self.phase_function.clone(),
+        })
     }
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
         self.boundary.bounding_box(time0, time1)
@@ -762,17 +782,22 @@ impl Hittable for ConstantMedium {
 
 pub struct Isotropic {
     albedo: Arc<Box<dyn Texture>>,
-} 
+}
 
 impl Isotropic {
     pub fn from_color(c: &Color) -> Isotropic {
-        Isotropic { albedo: Arc::new(Box::new(SolidColor::new(c))) }
+        Isotropic {
+            albedo: Arc::new(Box::new(SolidColor::new(c))),
+        }
     }
 }
 
 impl Material for Isotropic {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
-        Some((Ray::new(&rec.p, &random_in_unit_sphere(), r_in.get_time()), self.albedo.value(rec.get_u(), rec.get_v(), rec.get_p(),)))
+        Some((
+            Ray::new(&rec.p, &random_in_unit_sphere(), r_in.get_time()),
+            self.albedo.value(rec.get_u(), rec.get_v(), rec.get_p()),
+        ))
     }
 }
 

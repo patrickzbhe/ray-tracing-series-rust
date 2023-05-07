@@ -20,15 +20,15 @@ impl Vec3 {
         return self.2;
     }
 
-    pub fn set_x(&mut self, x:f64) {
+    pub fn set_x(&mut self, x: f64) {
         self.0 = x;
     }
 
-    pub fn set_y(&mut self, y:f64) {
+    pub fn set_y(&mut self, y: f64) {
         self.1 = y;
     }
 
-    pub fn set_z(&mut self, z:f64) {
+    pub fn set_z(&mut self, z: f64) {
         self.2 = z;
     }
 
@@ -172,7 +172,11 @@ impl ops::Mul<Vec3> for f64 {
     type Output = Vec3;
 
     fn mul(self, other: Vec3) -> Vec3 {
-        Vec3(self * other.get_x(), self * other.get_y(), self * other.get_z())
+        Vec3(
+            self * other.get_x(),
+            self * other.get_y(),
+            self * other.get_z(),
+        )
     }
 }
 
@@ -244,13 +248,21 @@ impl ops::MulAssign for Vec3 {
 
 impl PartialEq for Vec3 {
     fn eq(&self, other: &Self) -> bool {
-        self.get_x() == other.get_x() && self.get_y() == other.get_y() && self.get_z() == other.get_z()
+        self.get_x() == other.get_x()
+            && self.get_y() == other.get_y()
+            && self.get_z() == other.get_z()
     }
 }
 
 impl fmt::Display for Vec3 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Vec3 ({} {} {})", self.get_x(), self.get_y(), self.get_z())
+        write!(
+            f,
+            "Vec3 ({} {} {})",
+            self.get_x(),
+            self.get_y(),
+            self.get_z()
+        )
     }
 }
 

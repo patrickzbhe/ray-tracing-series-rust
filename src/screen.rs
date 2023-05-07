@@ -63,9 +63,17 @@ impl Screen {
         let mut num_iter = nums.iter();
         for j in 0..height {
             for i in 0..width {
-                let (x,y,z) = (num_iter.next().unwrap(), num_iter.next().unwrap(), num_iter.next().unwrap());
-                
-                pixels[j * width + i] = Color::new(x.parse::<f64>().unwrap(), y.parse::<f64>().unwrap(), z.parse::<f64>().unwrap());
+                let (x, y, z) = (
+                    num_iter.next().unwrap(),
+                    num_iter.next().unwrap(),
+                    num_iter.next().unwrap(),
+                );
+
+                pixels[j * width + i] = Color::new(
+                    x.parse::<f64>().unwrap(),
+                    y.parse::<f64>().unwrap(),
+                    z.parse::<f64>().unwrap(),
+                );
             }
         }
         Screen {
