@@ -42,6 +42,7 @@ impl Aabb {
                 r.get_direction().get_z(),
             ),
         ];
+
         for (min, max, origin, direction) in intervals {
             // x
             let inv_d = 1.0 / direction;
