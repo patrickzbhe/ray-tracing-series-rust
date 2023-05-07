@@ -698,7 +698,7 @@ fn main() {
 
     // image
     let aspect_ratio: f64 = 1.0;
-    let image_width = 600;
+    let image_width = 800;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
     let samples_per_pixel = 200;
     let max_depth = 50;
@@ -716,16 +716,15 @@ fn main() {
         let send_clone = sender.clone();
         let shared_world: Arc<Box<dyn Hittable + Sync>> = world.clone();
         let shared_cam = cam.clone();
-        let rand1 = rng.gen::<f64>();
-        let rand2 = rng.gen::<f64>();
+  
 
         thread::spawn(move || {
             for j in start..end {
                 for i in 0..image_width {
                     let mut pixel = Vec3::new(0, 0, 0);
                     for _ in 0..samples_per_pixel {
-                        let u = (i as f64 + rand1) / (image_width - 1) as f64;
-                        let v = (j as f64 + rand2) / (image_height - 1) as f64;
+                        let u = (i as f64 + thread_rng().gen::<f64>()) / (image_width - 1) as f64;
+                        let v = (j as f64 + thread_rng().gen::<f64>()) / (image_height - 1) as f64;
                         let r = shared_cam.get_ray(u, v);
                         pixel += ray_color(&r, &background, shared_world.as_ref(), max_depth);
                     }
