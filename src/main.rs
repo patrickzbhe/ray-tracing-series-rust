@@ -16,6 +16,7 @@ use std::time::Instant;
 use std::{backtrace, thread};
 
 const THREADS: usize = 10;
+const CONFIG_NUM: usize = 4;
 
 fn ray_color(
     &r: &Ray,
@@ -31,7 +32,7 @@ fn ray_color(
     loop {
         depth -= 1;
         if depth < 0 {
-            return Vec3::new(0, 0, 0);
+            break;
         }
         match world.hit(&current_ray, 0.001, f64::INFINITY) {
             Some(rec) => match rec.get_material().scatter(&current_ray, &rec) {
@@ -697,13 +698,13 @@ fn main() {
 
     // image
     let aspect_ratio: f64 = 1.0;
-    let image_width = 800;
+    let image_width = 600;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 10000;
+    let samples_per_pixel = 200;
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
-    let (world, cam, background) = get_world_cam(6);
+    let (world, cam, background) = get_world_cam(CONFIG_NUM);
 
     let mut screen = Screen::new(image_width as usize, image_height as usize);
 

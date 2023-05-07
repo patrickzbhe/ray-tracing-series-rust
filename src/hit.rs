@@ -745,7 +745,7 @@ impl Hittable for ConstantMedium {
         }
         let ray_length = r.get_direction().length();
         let distance_inside_boundary = (t2 -t1) * ray_length;
-        let hit_distance = self.neg_inv_density * f64::log(thread_rng().gen(), 10.0);
+        let hit_distance = self.neg_inv_density * f64::ln(thread_rng().gen());
         if hit_distance > distance_inside_boundary {
             return None;
         }
@@ -753,7 +753,7 @@ impl Hittable for ConstantMedium {
         let p = r.at(t);
         let normal = Vec3::new(0,0,0);
         let front_face = true;
-        Some(HitRecord { p, normal, t, u: 0.0, v: 0.0, front_face: front_face, mat_ptr: self.phase_function.clone() })
+        Some(HitRecord { p, normal, t, u: 0.0, v: 0.0, front_face, mat_ptr: self.phase_function.clone() })
     }
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
         self.boundary.bounding_box(time0, time1)
