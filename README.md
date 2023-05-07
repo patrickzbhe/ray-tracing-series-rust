@@ -36,7 +36,7 @@ let image_height = (image_width as f64 / aspect_ratio) as i32;
 let samples_per_pixel = 10000;
 let max_depth = 50;
 ```
-![Ray Tracing in One Week Final Image](/images/nextweek.png)
+![Ray Tracing in One Week Final Image](/images/book2.png)
 | Version                    | Time (s) |
 |----------------------------|----------|
 | 10 threads - some bugs? | 12453.138s |

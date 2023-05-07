@@ -14,8 +14,8 @@ use std::sync::Arc;
 use std::time::Instant;
 use std::thread;
 
-const THREADS: usize = 10;
-const CONFIG_NUM: usize = 4;
+const THREADS: usize = 11;
+const CONFIG_NUM: usize = 6;
 
 fn ray_color(
     &r: &Ray,
@@ -506,6 +506,46 @@ fn final_scene() -> Box<dyn Hittable + Sync> {
     Box::new(list)
 }
 
+
+fn gen_moving_test() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let ground: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            Checker::from_colors(&Color::new(0.2, 0.3, 0.1), &Color::new(0.9, 0.9, 0.9)),
+        )))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, -1000, -1),
+        1000.0,
+        ground,
+    ))));
+    let albedo = Color::new(1,0,0);
+    let sphere_material = Box::new(Lambertian::new(albedo));
+    let center1 = Vec3::new(
+        2,
+        0,
+        2,
+    );
+
+    let center2 = Vec3::new(
+        2,
+        15,
+        2,
+    );
+    list.add(Arc::new(Box::new(MovingSphere::new(
+        center1,
+        center2,
+        0.0,
+        10.0,
+        1.0,
+        Arc::new(sphere_material),
+    ))));
+    let bvhnode = BvhNode::from_list(&list, 0.0 , 10.0);
+
+    let world: Box<dyn Hittable + Sync> = Box::new(bvhnode);
+    //let world: Box<dyn Hittable + Sync> = Box::new(list);
+    world
+}
+
 fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camera>, Color) {
     // TODO: do something smart, load from file maybe?
     let aspect_ratio: f64 = 16.0 / 9.0;
@@ -660,6 +700,27 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             ));
             return (world, cam, Color::new(0, 0, 0));
         }
+        7 => { 
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_moving_test());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                2.0,
+                2.5,
+            ));
+            return (world, cam, background);
+        }
         _ => {
             let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());
             // camera
@@ -677,12 +738,13 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
                 aperture,
                 dist_to_focus,
                 0.0,
-                1.0,
+                10.0,
             ));
             return (world, cam, background);
         }
     }
 }
+
 
 fn main() {
     let (sender, receiver) = channel();
@@ -692,9 +754,9 @@ fn main() {
 
     // image
     let aspect_ratio: f64 = 1.0;
-    let image_width = 800;
+    let image_width = 1000;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 200;
+    let samples_per_pixel = 10000;
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
