@@ -1,7 +1,7 @@
 use ray_tracing_series_rust::world::*;
 use std::time::Instant;
 
-const THREADS: usize = 11;
+const THREADS: usize = 1;
 const SCENE_ID: usize = 20;
 
 fn main() {

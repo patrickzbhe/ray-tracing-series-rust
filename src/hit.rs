@@ -1,4 +1,5 @@
 use crate::aabb::Aabb;
+use crate::bvh::BvhNode;
 use crate::ray::Ray;
 use crate::texture::{SolidColor, Texture};
 use crate::vec3::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
@@ -79,11 +80,65 @@ impl HitRecord {
     }
 }
 
+
+
 pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
 
+#[derive(Clone)]
+pub enum HittableWrapper {
+    Sphere(Sphere),
+    MovingSphere(MovingSphere),
+    GravitySphere(GravitySphere),
+    XyRect(XyRect),
+    XzRect(XzRect),
+    YzRect(YzRect),
+    HittableList(HittableList),
+    RectPrism(RectPrism),
+    Translate(Translate),
+    RotateY(RotateY),
+    ConstantMedium(ConstantMedium),
+    BvhNode(BvhNode),
+}
+
+impl Hittable for HittableWrapper {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        match self {
+            HittableWrapper::Sphere(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::MovingSphere(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::GravitySphere(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::XyRect(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::XzRect(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::YzRect(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::HittableList(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::RectPrism(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::Translate(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::RotateY(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::ConstantMedium(obj) => obj.hit(r, t_min, t_max),
+            HittableWrapper::BvhNode(obj) => obj.hit(r, t_min, t_max),
+        }
+    }
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        match self {
+            HittableWrapper::Sphere(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::MovingSphere(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::GravitySphere(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::XyRect(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::XzRect(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::YzRect(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::HittableList(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::RectPrism(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::Translate(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::RotateY(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::ConstantMedium(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::BvhNode(obj) => obj.bounding_box( time0, time1),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Sphere {
     center: Point3,
     radius: f64,
@@ -106,6 +161,7 @@ impl Sphere {
         (phi / (2.0 * PI), theta / PI)
     }
 }
+
 
 impl Hittable for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
@@ -151,6 +207,7 @@ impl Hittable for Sphere {
     }
 }
 
+#[derive(Clone)]
 pub struct MovingSphere {
     center0: Point3,
     center1: Point3,
@@ -234,6 +291,7 @@ impl Hittable for MovingSphere {
     }
 }
 
+#[derive(Clone)]
 pub struct GravitySphere {
     start: Point3,
     time0: f64,
@@ -350,6 +408,7 @@ impl Hittable for GravitySphere {
     }
 }
 
+#[derive(Clone)]
 pub struct XyRect {
     x0: f64,
     x1: f64,
@@ -415,6 +474,7 @@ impl Hittable for XyRect {
     }
 }
 
+#[derive(Clone)]
 pub struct XzRect {
     x0: f64,
     x1: f64,
@@ -480,6 +540,7 @@ impl Hittable for XzRect {
     }
 }
 
+#[derive(Clone)]
 pub struct YzRect {
     x0: f64,
     x1: f64,
@@ -545,8 +606,9 @@ impl Hittable for YzRect {
     }
 }
 
+#[derive(Clone)]
 pub struct HittableList {
-    objects: Vec<Arc<Box<dyn Hittable + Sync>>>,
+    objects: Vec<Arc<HittableWrapper>>,
 }
 
 impl HittableList {
@@ -554,11 +616,11 @@ impl HittableList {
         HittableList { objects: vec![] }
     }
 
-    pub fn add(&mut self, object: Arc<Box<dyn Hittable + Sync>>) {
+    pub fn add(&mut self, object: Arc<HittableWrapper>) {
         self.objects.push(Arc::clone(&object));
     }
 
-    pub fn get_objects(&self) -> &Vec<Arc<Box<dyn Hittable + Sync>>> {
+    pub fn get_objects(&self) -> &Vec<Arc<HittableWrapper>> {
         &self.objects
     }
 }
@@ -617,6 +679,7 @@ impl Hittable for HittableList {
     }
 }
 
+#[derive(Clone)]
 pub struct RectPrism {
     box_min: Point3,
     box_max: Point3,
@@ -626,7 +689,7 @@ pub struct RectPrism {
 impl RectPrism {
     pub fn new(p0: &Point3, p1: &Point3, mat: Arc<Box<dyn Material>>) -> RectPrism {
         let mut sides = HittableList::new();
-        sides.add(Arc::new(Box::new(XyRect::new(
+        sides.add(Arc::new(HittableWrapper::XyRect(XyRect::new(
             p0.get_x(),
             p1.get_x(),
             p0.get_y(),
@@ -634,7 +697,7 @@ impl RectPrism {
             p1.get_z(),
             mat.clone(),
         ))));
-        sides.add(Arc::new(Box::new(XyRect::new(
+        sides.add(Arc::new(HittableWrapper::XyRect(XyRect::new(
             p0.get_x(),
             p1.get_x(),
             p0.get_y(),
@@ -642,7 +705,7 @@ impl RectPrism {
             p0.get_z(),
             mat.clone(),
         ))));
-        sides.add(Arc::new(Box::new(XzRect::new(
+        sides.add(Arc::new(HittableWrapper::XzRect(XzRect::new(
             p0.get_x(),
             p1.get_x(),
             p0.get_z(),
@@ -650,7 +713,7 @@ impl RectPrism {
             p1.get_y(),
             mat.clone(),
         ))));
-        sides.add(Arc::new(Box::new(XzRect::new(
+        sides.add(Arc::new(HittableWrapper::XzRect(XzRect::new(
             p0.get_x(),
             p1.get_x(),
             p0.get_z(),
@@ -658,7 +721,7 @@ impl RectPrism {
             p0.get_y(),
             mat.clone(),
         ))));
-        sides.add(Arc::new(Box::new(YzRect::new(
+        sides.add(Arc::new(HittableWrapper::YzRect(YzRect::new(
             p0.get_y(),
             p1.get_y(),
             p0.get_z(),
@@ -666,7 +729,7 @@ impl RectPrism {
             p1.get_x(),
             mat.clone(),
         ))));
-        sides.add(Arc::new(Box::new(YzRect::new(
+        sides.add(Arc::new(HittableWrapper::YzRect(YzRect::new(
             p0.get_y(),
             p1.get_y(),
             p0.get_z(),
@@ -691,13 +754,14 @@ impl Hittable for RectPrism {
     }
 }
 
+#[derive(Clone)]
 pub struct Translate {
-    obj: Arc<Box<dyn Hittable + Send + Sync>>,
+    obj: Arc<HittableWrapper>,
     offset: Vec3,
 }
 
 impl Translate {
-    pub fn new(offset: &Vec3, obj: Arc<Box<dyn Hittable + Send + Sync>>) -> Translate {
+    pub fn new(offset: &Vec3, obj: Arc<HittableWrapper>) -> Translate {
         Translate {
             obj: obj.clone(),
             offset: offset.clone(),
@@ -739,15 +803,16 @@ impl Hittable for Translate {
     }
 }
 
+#[derive(Clone)]
 pub struct RotateY {
-    obj: Arc<Box<dyn Hittable + Send + Sync>>,
+    obj: Arc<HittableWrapper>,
     sin_theta: f64,
     cos_theta: f64,
     bbox: Option<Aabb>,
 }
 
 impl RotateY {
-    pub fn new(angle: f64, obj: Arc<Box<dyn Hittable + Send + Sync>>) -> RotateY {
+    pub fn new(angle: f64, obj: Arc<HittableWrapper>) -> RotateY {
         let angle = f64::to_radians(angle);
         let sin_theta = f64::sin(angle);
         let cos_theta = f64::cos(angle);
@@ -842,14 +907,15 @@ impl Hittable for RotateY {
     }
 }
 
+#[derive(Clone)]
 pub struct ConstantMedium {
-    boundary: Arc<Box<dyn Hittable>>,
+    boundary: Arc<HittableWrapper>,
     phase_function: Arc<Box<dyn Material>>,
     neg_inv_density: f64,
 }
 
 impl ConstantMedium {
-    pub fn from_color(c: &Color, d: f64, b: Arc<Box<dyn Hittable>>) -> ConstantMedium {
+    pub fn from_color(c: &Color, d: f64, b: Arc<HittableWrapper>) -> ConstantMedium {
         ConstantMedium {
             boundary: b.clone(),
             phase_function: Arc::new(Box::new(Isotropic::from_color(c))),
@@ -896,6 +962,7 @@ impl Hittable for ConstantMedium {
     }
 }
 
+#[derive(Clone)]
 pub struct Isotropic {
     albedo: Arc<Box<dyn Texture>>,
 }
@@ -924,6 +991,7 @@ pub trait Material: Send + Sync {
     }
 }
 
+#[derive(Clone)]
 pub struct Lambertian {
     albedo: Arc<Box<dyn Texture>>,
 }
@@ -958,6 +1026,7 @@ impl Material for Lambertian {
     }
 }
 
+#[derive(Clone)]
 pub struct Metal {
     albedo: Color,
     fuzz: f64,
