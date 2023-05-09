@@ -234,8 +234,7 @@ impl Hittable for MovingSphere {
     }
 }
 
-
-pub struct HardCodedSphere {
+pub struct GravitySphere {
     start: Point3,
     time0: f64,
     radius: f64,
@@ -243,13 +242,14 @@ pub struct HardCodedSphere {
     pub stored: Vec<f64>,
 }
 
-impl HardCodedSphere {
+// Fix this up later
+impl GravitySphere {
     pub fn new(
         start: Point3,
         time0: f64,
         radius: f64,
         mat_ptr: Arc<Box<dyn Material>>,
-    ) -> HardCodedSphere {
+    ) -> GravitySphere {
         let mut stored = vec![start.get_y()];
         let incr = 0.001;
         let mut t = time0;
@@ -258,18 +258,18 @@ impl HardCodedSphere {
         while t < 100.0 {
             t += incr;
             vel -= 0.000001;
-            if cur_pos.get_y() -  1.0 * radius <= 0.0 {
+            if cur_pos.get_y() - 1.0 * radius <= 0.0 {
                 vel *= -0.92;
             }
-            cur_pos.set_y(f64::max( 1.0 * radius , cur_pos.get_y() + vel));
+            cur_pos.set_y(f64::max(1.0 * radius, cur_pos.get_y() + vel));
             stored.push(cur_pos.get_y());
         }
-        let output = HardCodedSphere {
+        let output = GravitySphere {
             start,
             time0,
             radius,
             mat_ptr,
-            stored: stored
+            stored: stored,
         };
         output
     }
@@ -278,28 +278,30 @@ impl HardCodedSphere {
         let incr = 0.001;
         // brute force lmao
         if (time / incr) as usize + 1 <= self.stored.len() {
-            return Vec3::new(self.start.get_x(), self.stored[(time / incr) as usize], self.start.get_z());
+            return Vec3::new(
+                self.start.get_x(),
+                self.stored[(time / incr) as usize],
+                self.start.get_z(),
+            );
         }
         // TODO: figure out radius x2 bug?
         let mut t = self.time0;
         let mut cur_pos = self.start.clone();
         let mut vel = 0.0;
         while t < time {
-        
             t += incr;
             vel -= 0.000001;
             if cur_pos.get_y() - 2.0 * self.radius <= 0.0 {
                 vel *= -0.8;
             }
-            cur_pos.set_y(f64::max(2.0 * self.radius , cur_pos.get_y() + vel));
-
+            cur_pos.set_y(f64::max(2.0 * self.radius, cur_pos.get_y() + vel));
         }
-    
+
         return cur_pos;
     }
 }
 
-impl Hittable for HardCodedSphere {
+impl Hittable for GravitySphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let cur_time = self.get_center(r.get_time());
         let oc = *r.get_origin() - cur_time;
@@ -347,7 +349,6 @@ impl Hittable for HardCodedSphere {
         Some(Aabb::surrounding_box(&box0, &box1))
     }
 }
-
 
 pub struct XyRect {
     x0: f64,

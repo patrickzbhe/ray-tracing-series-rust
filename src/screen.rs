@@ -49,10 +49,10 @@ impl Screen {
 
     pub fn write_to_ppm_file(&self, path: &str) {
         let mut output = String::new();
-        output += &format!("P3\n{} {}\n255\n", self.get_width(),self.get_height());
+        output += &format!("P3\n{} {}\n255\n", self.get_width(), self.get_height());
         for j in (0..self.height).rev() {
             for i in 0..self.width {
-                output +=  &format!("{}\n", self.get(j, i).get_color());
+                output += &format!("{}\n", self.get(j, i).get_color());
             }
         }
         fs::write(path, output).unwrap();

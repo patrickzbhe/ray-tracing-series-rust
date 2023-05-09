@@ -8,3 +8,4 @@ pub mod ray;
 pub mod screen;
 pub mod texture;
 pub mod vec3;
+pub mod world;

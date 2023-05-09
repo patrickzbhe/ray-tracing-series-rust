@@ -1,6 +1,6 @@
 use crate::mutil::clamp;
 use rand::{thread_rng, Rng};
-use std::{fmt, ops, path::Iter};
+use std::{fmt, ops};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3(f64, f64, f64);
@@ -323,7 +323,7 @@ pub fn random_in_unit_disk() -> Vec3 {
 
 pub struct Vec3Iter<'a> {
     cur: usize,
-    vec3: &'a Vec3
+    vec3: &'a Vec3,
 }
 
 impl<'a> Iterator for Vec3Iter<'a> {
@@ -335,12 +335,10 @@ impl<'a> Iterator for Vec3Iter<'a> {
             0 => Some(self.vec3.get_x()),
             1 => Some(self.vec3.get_y()),
             2 => Some(self.vec3.get_z()),
-            _ => None
+            _ => None,
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -409,7 +407,7 @@ mod tests {
 
     #[test]
     fn vec3_iter() {
-        let v = Vec3::new(5,6,7);
+        let v = Vec3::new(5, 6, 7);
         let mut k = v.iter();
         assert_eq!(k.next(), Some(5.0));
         assert_eq!(k.next(), Some(6.0));
@@ -419,8 +417,8 @@ mod tests {
 
     #[test]
     fn vec3_zip_iter() {
-        let v1 = Vec3::new(5,6,7);
-        let v2 = Vec3::new(7,8,9);
+        let v1 = Vec3::new(5, 6, 7);
+        let v2 = Vec3::new(7, 8, 9);
         let mut k = v1.iter().zip(v2.iter());
         assert_eq!(k.next(), Some((5.0, 7.0)));
         assert_eq!(k.next(), Some((6.0, 8.0)));
