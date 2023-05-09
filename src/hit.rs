@@ -104,7 +104,6 @@ pub enum HittableWrapper {
 }
 
 impl Hittable for HittableWrapper {
-    #[inline]
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         match &self {
             HittableWrapper::Sphere(obj) => obj.hit(r, t_min, t_max),
@@ -121,7 +120,6 @@ impl Hittable for HittableWrapper {
             HittableWrapper::BvhNode(obj) => obj.hit(r, t_min, t_max),
         }
     }
-    #[inline]
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
         match self {
             HittableWrapper::Sphere(obj) => obj.bounding_box( time0, time1),
