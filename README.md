@@ -39,5 +39,8 @@ let max_depth = 50;
 ![Ray Tracing in One Week Final Image](/images/book2.png)
 | Version                    | Time (s) |
 |----------------------------|----------|
-| 10 threads - some bugs? | 12453.138s |
+| 10 threads | 12453.138s |
+
+### Video testing
+![Video testing](/images/bouncing.gif)
 

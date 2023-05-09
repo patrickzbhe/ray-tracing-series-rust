@@ -1,5 +1,5 @@
 use crate::vec3::Color;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::prelude::*;
 use std::io::Write;
 
@@ -45,6 +45,17 @@ impl Screen {
                 writeln!(stdout, "{}", self.get(j, i).get_color()).unwrap();
             }
         }
+    }
+
+    pub fn write_to_ppm_file(&self, path: &str) {
+        let mut output = String::new();
+        output += &format!("P3\n{} {}\n255\n", self.get_width(),self.get_height());
+        for j in (0..self.height).rev() {
+            for i in 0..self.width {
+                output +=  &format!("{}\n", self.get(j, i).get_color());
+            }
+        }
+        fs::write(path, output).unwrap();
     }
 
     pub fn from_ppm_p3(name: &str) -> Screen {

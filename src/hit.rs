@@ -234,6 +234,121 @@ impl Hittable for MovingSphere {
     }
 }
 
+
+pub struct HardCodedSphere {
+    start: Point3,
+    time0: f64,
+    radius: f64,
+    mat_ptr: Arc<Box<dyn Material>>,
+    pub stored: Vec<f64>,
+}
+
+impl HardCodedSphere {
+    pub fn new(
+        start: Point3,
+        time0: f64,
+        radius: f64,
+        mat_ptr: Arc<Box<dyn Material>>,
+    ) -> HardCodedSphere {
+        let mut stored = vec![start.get_y()];
+        let incr = 0.001;
+        let mut t = time0;
+        let mut cur_pos = start;
+        let mut vel = 0.0;
+        while t < 100.0 {
+            t += incr;
+            vel -= 0.000001;
+            if cur_pos.get_y() -  1.0 * radius <= 0.0 {
+                vel *= -0.92;
+            }
+            cur_pos.set_y(f64::max( 1.0 * radius , cur_pos.get_y() + vel));
+            stored.push(cur_pos.get_y());
+        }
+        let output = HardCodedSphere {
+            start,
+            time0,
+            radius,
+            mat_ptr,
+            stored: stored
+        };
+        output
+    }
+
+    pub fn get_center(&self, time: f64) -> Point3 {
+        let incr = 0.001;
+        // brute force lmao
+        if (time / incr) as usize + 1 <= self.stored.len() {
+            return Vec3::new(self.start.get_x(), self.stored[(time / incr) as usize], self.start.get_z());
+        }
+        // TODO: figure out radius x2 bug?
+        let mut t = self.time0;
+        let mut cur_pos = self.start.clone();
+        let mut vel = 0.0;
+        while t < time {
+        
+            t += incr;
+            vel -= 0.000001;
+            if cur_pos.get_y() - 2.0 * self.radius <= 0.0 {
+                vel *= -0.8;
+            }
+            cur_pos.set_y(f64::max(2.0 * self.radius , cur_pos.get_y() + vel));
+
+        }
+    
+        return cur_pos;
+    }
+}
+
+impl Hittable for HardCodedSphere {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        let cur_time = self.get_center(r.get_time());
+        let oc = *r.get_origin() - cur_time;
+        let a = r.get_direction().length_squared();
+        let half_b = oc.dot(r.get_direction());
+        let c = oc.length_squared() - self.radius * self.radius;
+        let discriminant = half_b * half_b - a * c;
+        if discriminant < 0.0 {
+            return None;
+        }
+        let sqrtd = f64::sqrt(discriminant);
+
+        let mut root = (-half_b - sqrtd) / a;
+        if root < t_min || t_max < root {
+            root = (-half_b + sqrtd) / a;
+            if root < t_min || t_max < root {
+                return None;
+            }
+        }
+        let t = root;
+        let p = r.at(t);
+        let outward_normal = (p - cur_time) / self.radius;
+        let (normal, front_face) = HitRecord::create_normal_face(r, &outward_normal);
+
+        Some(HitRecord::new(
+            p,
+            normal,
+            t,
+            0.0,
+            0.0,
+            front_face,
+            Arc::clone(&self.mat_ptr),
+        ))
+        // TODO return an option here?
+    }
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        let box0 = Aabb::new(
+            self.get_center(time0) - Point3::new(self.radius, self.radius, self.radius),
+            self.get_center(time0) + Point3::new(self.radius, self.radius, self.radius),
+        );
+        let box1 = Aabb::new(
+            self.get_center(time1) - Point3::new(self.radius, self.radius, self.radius),
+            self.get_center(time1) + Point3::new(self.radius, self.radius, self.radius),
+        );
+        Some(Aabb::surrounding_box(&box0, &box1))
+    }
+}
+
+
 pub struct XyRect {
     x0: f64,
     x1: f64,

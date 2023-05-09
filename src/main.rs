@@ -3,7 +3,7 @@ use ray_tracing_series_rust::bvh::BvhNode;
 use ray_tracing_series_rust::camera::Camera;
 use ray_tracing_series_rust::hit::{
     ConstantMedium, Dielectric, DiffuseLight, Hittable, HittableList, Lambertian, Material, Metal,
-    MovingSphere, RectPrism, RotateY, Sphere, Translate, XyRect, XzRect, YzRect,
+    MovingSphere, RectPrism, RotateY, Sphere, Translate, XyRect, XzRect, YzRect, HardCodedSphere,
 };
 use ray_tracing_series_rust::ray::Ray;
 use ray_tracing_series_rust::screen::Screen;
@@ -13,9 +13,10 @@ use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::time::Instant;
 use std::thread;
+use std::env;
 
 const THREADS: usize = 11;
-const CONFIG_NUM: usize = 6;
+const SCENE_ID: usize = 8;
 
 fn ray_color(
     &r: &Ray,
@@ -94,12 +95,12 @@ fn gen_random_scene() -> Box<dyn Hittable + Sync> {
                     Box::new(Dielectric::new(1.5))
                 };
                 if choose_mat < 0.8 {
-                    let center2 = center + Vec3::new(0, rng.gen_range(0.0..0.5), 0);
+                    let center2 = center + Vec3::new(0, 5, 0);
                     list.add(Arc::new(Box::new(MovingSphere::new(
                         center,
                         center2,
                         0.0,
-                        1.0,
+                        10.0,
                         0.2,
                         Arc::new(sphere_material),
                     ))));
@@ -127,7 +128,87 @@ fn gen_random_scene() -> Box<dyn Hittable + Sync> {
     ))));
     list.add(Arc::new(Box::new(Sphere::new(Vec3::new(4, 1, 0), 1.0, m3))));
 
-    let bvhnode = BvhNode::from_list(&list, 0.0, 1.0);
+    let bvhnode = BvhNode::from_list(&list, 0.0, 10.0);
+
+    let world: Box<dyn Hittable + Sync> = Box::new(bvhnode);
+    //let world: Box<dyn Hittable + Sync> = Box::new(list);
+    world
+}
+
+
+fn gen_random_scene_moving() -> Box<dyn Hittable + Sync> {
+    let max_time = 100.0;
+    let mut rng = thread_rng();
+    let mut list = HittableList::new();
+    let ground: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+            SolidColor::new(&Color::new(0.8, 0.8, 0.8)),
+        )))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(0, -1000, -1),
+        1000.0,
+        ground,
+    ))));
+    for a in -11..11 {
+        for b in -11..11 {
+            if i32::abs(a-0) <= 1 && i32::abs(b-0) <= 1 {
+                continue;
+            }
+            if i32::abs(a-4) <= 1 && i32::abs(b-0) <= 1 {
+                continue;
+            }
+            let choose_mat = rng.gen::<f64>();
+            let center = Vec3::new(
+                a as f64 + 0.9 * rng.gen::<f64>(),
+                1.7 + thread_rng().gen_range(0.0..2.0),
+                b as f64 + 0.9 * rng.gen::<f64>(),
+            );
+
+            if (center - Vec3::new(4, 0.2, 0)).length() > 0.9 {
+                let sphere_material: Box<dyn Material> = if choose_mat < 0.3 {
+                    // diffuse
+                    let albedo = random() * random();
+                    Box::new(Lambertian::new(albedo))
+                } else if choose_mat < 0.6 {
+                    let albedo = random_range(0.5, 1.0);
+                    let fuzz = rng.gen_range::<f64, std::ops::Range<f64>>(0.0..0.5);
+                    Box::new(Metal::new(albedo, fuzz))
+                } else {
+                    Box::new(Dielectric::new(1.5))
+                };
+                if choose_mat < 1.0 {
+          
+                    list.add(Arc::new(Box::new(HardCodedSphere::new(
+                        center,
+                        0.0,
+                        0.2,
+                        Arc::new(sphere_material),
+                    ))));
+                    continue;
+                }
+
+                list.add(Arc::new(Box::new(Sphere::new(
+                    center,
+                    0.2,
+                    Arc::new(sphere_material),
+                ))));
+            }
+        }
+    }
+
+    let m1: Arc<Box<dyn Material>> = Arc::new(Box::new(Dielectric::new(1.5)));
+    let m2: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::new(Vec3::new(0.4, 0.2, 0.1))));
+    let m3: Arc<Box<dyn Material>> = Arc::new(Box::new(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)));
+
+    list.add(Arc::new(Box::new(Sphere::new(Vec3::new(0, 1, 0), 1.0, m1))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Vec3::new(-4, 1, 0),
+        1.0,
+        m2,
+    ))));
+    list.add(Arc::new(Box::new(Sphere::new(Vec3::new(4, 1, 0), 1.0, m3))));
+
+    let bvhnode = BvhNode::from_list(&list, 0.0, max_time);
 
     let world: Box<dyn Hittable + Sync> = Box::new(bvhnode);
     //let world: Box<dyn Hittable + Sync> = Box::new(list);
@@ -522,13 +603,13 @@ fn gen_moving_test() -> Box<dyn Hittable + Sync> {
     let sphere_material = Box::new(Lambertian::new(albedo));
     let center1 = Vec3::new(
         2,
-        0,
+        -1,
         2,
     );
 
     let center2 = Vec3::new(
         2,
-        15,
+        7,
         2,
     );
     list.add(Arc::new(Box::new(MovingSphere::new(
@@ -721,6 +802,27 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
             ));
             return (world, cam, background);
         }
+        8 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene_moving());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                10.0,
+            ));
+            return (world, cam, background);
+        }
         _ => {
             let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());
             // camera
@@ -745,22 +847,18 @@ fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camer
     }
 }
 
-
-fn main() {
+fn render_scene() {
     let (sender, receiver) = channel();
-
-    // timer
-    let start = Instant::now();
 
     // image
     let aspect_ratio: f64 = 1.0;
-    let image_width = 1000;
+    let image_width = 400;
     let image_height = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel = 10000;
+    let samples_per_pixel = 200;
     let max_depth = 50;
 
     // let world: Box<dyn Hittable + Sync> = gen_random_scene();
-    let (world, cam, background) = get_world_cam(CONFIG_NUM);
+    let (world, cam, background) = get_world_cam(SCENE_ID);
 
     let mut screen = Screen::new(image_width as usize, image_height as usize);
 
@@ -812,8 +910,104 @@ fn main() {
         }
     }
 
-    eprintln!("\nDone!");
     screen.write_to_ppm();
+}
 
+fn render_scene_with_time(t0: f64, t1: f64, path: &str, world:  Arc<Box<dyn Hittable + Sync>>) {
+    let (sender, receiver) = channel();
+    
+    let background = Color::new(0.7, 0.8, 1);
+    let aspect_ratio: f64 = 1.0;
+    let image_width = 500;
+    let image_height = (image_width as f64 / aspect_ratio) as i32;
+    let samples_per_pixel = 500;
+    let max_depth = 50;
+    // camera
+    let lookfrom = Vec3::new(13, 2, 3);
+    let lookat = Vec3::new(0, 0, 0);
+    let vup = Vec3::new(0, 1, 0);
+    let dist_to_focus = 10.0;
+    let aperture = 0.1;
+    let cam = Arc::new(Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        20.0,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+        t0,
+        t1,
+    ));
+    // image
+
+
+    // let world: Box<dyn Hittable + Sync> = gen_random_scene();
+
+
+    let mut screen = Screen::new(image_width as usize, image_height as usize);
+
+    let chunk_size = image_height as usize / THREADS;
+
+    for t in 0..THREADS {
+        let start = t * chunk_size;
+        let end = usize::min(t * chunk_size + chunk_size, image_height as usize);
+        let send_clone = sender.clone();
+        let shared_world: Arc<Box<dyn Hittable + Sync>> = world.clone();
+        let shared_cam = cam.clone();
+
+        thread::spawn(move || {
+            for j in start..end {
+                for i in 0..image_width {
+                    let mut pixel = Vec3::new(0, 0, 0);
+                    for _ in 0..samples_per_pixel {
+                        let u = (i as f64 + thread_rng().gen::<f64>()) / (image_width - 1) as f64;
+                        let v = (j as f64 + thread_rng().gen::<f64>()) / (image_height - 1) as f64;
+                        let r = shared_cam.get_ray(u, v);
+                        pixel += ray_color(&r, &background, shared_world.as_ref(), max_depth);
+                    }
+                    send_clone
+                        .send((
+                            j as usize,
+                            i as usize,
+                            pixel.get_normalized_color(samples_per_pixel),
+                        ))
+                        .unwrap();
+                }
+            }
+        });
+    }
+    drop(sender);
+    let mut loops = 0;
+    let total = image_height * image_width;
+    loop {
+        loops += 1;
+        match receiver.recv() {
+            Ok((j, i, color)) => {
+                screen.update(j, i, color);
+            }
+            Err(_) => {
+                break;
+            }
+        }
+        if (loops % 20000) == 0 {
+            eprintln!("\rDone {} many loops out of {}", loops, total);
+        }
+    }
+
+    screen.write_to_ppm_file(path);
+}
+
+
+
+fn main() {
+    let start = Instant::now();
+
+    let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene_moving());
+    let time_chunk = 0.20;
+    for i in 0..400 {
+        render_scene_with_time(i as f64 * time_chunk, (i + 1) as f64 * time_chunk, &format!("./video_testing/good_balls/{}.ppm", i), world.clone());
+        eprintln!("Done frame: {}", i);
+    }
     eprintln!("Time taken: {:.3?}", start.elapsed());
 }

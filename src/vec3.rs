@@ -7,7 +7,7 @@ pub struct Vec3(f64, f64, f64);
 pub type Point3 = Vec3;
 pub type Color = Vec3;
 
-const COLOR_MAX: f64 = 256.0;
+const COLOR_MAX: f64 = 255.9;
 
 impl Vec3 {
     pub fn get_x(&self) -> f64 {
