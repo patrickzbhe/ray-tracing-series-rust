@@ -105,7 +105,7 @@ pub enum HittableWrapper {
 
 impl Hittable for HittableWrapper {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
-        match self {
+        match &self {
             HittableWrapper::Sphere(obj) => obj.hit(r, t_min, t_max),
             HittableWrapper::MovingSphere(obj) => obj.hit(r, t_min, t_max),
             HittableWrapper::GravitySphere(obj) => obj.hit(r, t_min, t_max),
