@@ -1,5 +1,4 @@
 use ray_tracing_series_rust::world::*;
-
 use std::time::Instant;
 
 const THREADS: usize = 11;
