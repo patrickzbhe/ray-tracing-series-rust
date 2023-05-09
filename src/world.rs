@@ -2,16 +2,17 @@ use crate::bvh::BvhNode;
 use crate::camera::Camera;
 use crate::hit::{
     ConstantMedium, Dielectric, DiffuseLight, GravitySphere, Hittable, HittableList, Lambertian,
-    Material, Metal, MovingSphere, RectPrism, RotateY, Sphere, Translate, XyRect, XzRect, YzRect, HittableWrapper
+    MaterialWrapper, Material, Metal, MovingSphere, RectPrism, RotateY, Sphere, Translate, XyRect, XzRect, YzRect, HittableWrapper
 };
 use crate::ray::Ray;
 use crate::screen::Screen;
-use crate::texture::{Checker, Image, Noise, SolidColor};
+use crate::texture::{Checker, Image, Noise, SolidColor, TextureWrapper};
 use crate::vec3::{random, random_range, Color, Point3, Vec3};
 use rand::{thread_rng, Rng};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 use std::thread;
+
 
 const THREADS: usize = 11;
 
@@ -87,8 +88,8 @@ fn ray_color(
 fn gen_random_scene() -> HittableWrapper {
     let mut rng = thread_rng();
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+    let ground: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(TextureWrapper::Checker(
             Checker::from_colors(&Color::new(0.2, 0.3, 0.1), &Color::new(0.9, 0.9, 0.9)),
         )))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
@@ -106,16 +107,16 @@ fn gen_random_scene() -> HittableWrapper {
             );
 
             if (center - Vec3::new(4, 0.2, 0)).length() > 0.9 {
-                let sphere_material: Box<dyn Material> = if choose_mat < 0.3 {
+                let sphere_material: MaterialWrapper = if choose_mat < 0.3 {
                     // diffuse
                     let albedo = random() * random();
-                    Box::new(Lambertian::new(albedo))
+                    MaterialWrapper::Lambertian(Lambertian::new(albedo))
                 } else if choose_mat < 0.6 {
                     let albedo = random_range(0.5, 1.0);
                     let fuzz = rng.gen_range::<f64, std::ops::Range<f64>>(0.0..0.5);
-                    Box::new(Metal::new(albedo, fuzz))
+                    MaterialWrapper::Metal(Metal::new(albedo, fuzz))
                 } else {
-                    Box::new(Dielectric::new(1.5))
+                    MaterialWrapper::Dielectric(Dielectric::new(1.5))
                 };
                 if choose_mat < 0.8 {
                     let center2 = center + Vec3::new(0, 5, 0);
@@ -139,9 +140,9 @@ fn gen_random_scene() -> HittableWrapper {
         }
     }
 
-    let m1: Arc<Box<dyn Material>> = Arc::new(Box::new(Dielectric::new(1.5)));
-    let m2: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::new(Vec3::new(0.4, 0.2, 0.1))));
-    let m3: Arc<Box<dyn Material>> = Arc::new(Box::new(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)));
+    let m1: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5)));
+    let m2: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Vec3::new(0.4, 0.2, 0.1))));
+    let m3: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Metal(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)));
 
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(Vec3::new(0, 1, 0), 1.0, m1))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
@@ -162,8 +163,8 @@ fn gen_random_scene_moving() -> HittableWrapper {
     let max_time = 100.0;
     let mut rng = thread_rng();
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(SolidColor::new(&Color::new(0.8, 0.8, 0.8))),
+    let ground: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(
+        TextureWrapper::SolidColor(SolidColor::new(&Color::new(0.8, 0.8, 0.8))),
     ))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Vec3::new(0, -1000, -1),
@@ -186,16 +187,16 @@ fn gen_random_scene_moving() -> HittableWrapper {
             );
 
             if (center - Vec3::new(4, 0.2, 0)).length() > 0.9 {
-                let sphere_material: Box<dyn Material> = if choose_mat < 0.3 {
+                let sphere_material: MaterialWrapper = if choose_mat < 0.3 {
                     // diffuse
                     let albedo = random() * random();
-                    Box::new(Lambertian::new(albedo))
+                    MaterialWrapper::Lambertian(Lambertian::new(albedo))
                 } else if choose_mat < 0.6 {
                     let albedo = random_range(0.5, 1.0);
                     let fuzz = rng.gen_range::<f64, std::ops::Range<f64>>(0.0..0.5);
-                    Box::new(Metal::new(albedo, fuzz))
+                    MaterialWrapper::Metal(Metal::new(albedo, fuzz))
                 } else {
-                    Box::new(Dielectric::new(1.5))
+                    MaterialWrapper::Dielectric(Dielectric::new(1.5))
                 };
                 if choose_mat < 1.0 {
                     list.add(Arc::new(HittableWrapper::GravitySphere(GravitySphere::new(
@@ -216,9 +217,9 @@ fn gen_random_scene_moving() -> HittableWrapper {
         }
     }
 
-    let m1: Arc<Box<dyn Material>> = Arc::new(Box::new(Dielectric::new(1.5)));
-    let m2: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::new(Vec3::new(0.4, 0.2, 0.1))));
-    let m3: Arc<Box<dyn Material>> = Arc::new(Box::new(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)));
+    let m1: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5)));
+    let m2: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Vec3::new(0.4, 0.2, 0.1))));
+    let m3: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Metal(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)));
 
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(Vec3::new(0, 1, 0), 1.0, m1))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
@@ -237,8 +238,8 @@ fn gen_random_scene_moving() -> HittableWrapper {
 
 fn gen_checkered_sphere() -> HittableWrapper {
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+    let ground: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(TextureWrapper::Checker(
             Checker::from_colors(&Color::new(0.2, 0.3, 0.1), &Color::new(0.9, 0.9, 0.9)),
         )))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
@@ -258,8 +259,8 @@ fn gen_checkered_sphere() -> HittableWrapper {
 
 fn gen_two_perlin() -> HittableWrapper {
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(Noise::new(4.0)),
+    let ground: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(
+        TextureWrapper::Noise(Noise::new(4.0)),
     ))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Vec3::new(0, -1000, 0),
@@ -278,8 +279,8 @@ fn gen_two_perlin() -> HittableWrapper {
 
 fn earth() -> HittableWrapper {
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(Image::from_ppm("earthshit.ppm")),
+    let ground: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(
+        TextureWrapper::Image(Image::from_ppm("earthshit.ppm")),
     ))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Vec3::new(0, -1000, 0),
@@ -298,8 +299,8 @@ fn earth() -> HittableWrapper {
 
 fn gen_simple_light() -> HittableWrapper {
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(Noise::new(4.0)),
+    let ground: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(
+        TextureWrapper::Noise(Noise::new(4.0)),
     ))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Vec3::new(0, -1000, 0),
@@ -313,8 +314,8 @@ fn gen_simple_light() -> HittableWrapper {
         ground,
     ))));
 
-    let difflight: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(DiffuseLight::new(&Color::new(10, 10, 10))));
+    let difflight: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::DiffuseLight(DiffuseLight::new(&Color::new(10, 10, 10))));
     list.add(Arc::new(HittableWrapper::XyRect(XyRect::new(
         3.0,
         5.0,
@@ -335,14 +336,14 @@ fn gen_simple_light() -> HittableWrapper {
 
 fn cornell_box() -> HittableWrapper {
     let mut list = HittableList::new();
-    let red: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
-    let white: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
-    let green: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
-    let light: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(DiffuseLight::new(&Color::new(15, 15, 15))));
+    let red: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
+    let white: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let green: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
+    let light: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::DiffuseLight(DiffuseLight::new(&Color::new(15, 15, 15))));
     list.add(Arc::new(HittableWrapper::YzRect(YzRect::new(
         0.0, 555.0, 0.0, 555.0, 555.0, green,
     ))));
@@ -406,14 +407,14 @@ fn cornell_box() -> HittableWrapper {
 
 fn cornell_smoke() -> HittableWrapper {
     let mut list = HittableList::new();
-    let red: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
-    let white: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
-    let green: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
-    let light: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(DiffuseLight::new(&Color::new(15, 15, 15))));
+    let red: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
+    let white: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let green: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
+    let light: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::DiffuseLight(DiffuseLight::new(&Color::new(15, 15, 15))));
     list.add(Arc::new(HittableWrapper::YzRect(YzRect::new(
         0.0, 555.0, 0.0, 555.0, 555.0, green,
     ))));
@@ -486,8 +487,8 @@ fn cornell_smoke() -> HittableWrapper {
 fn final_scene() -> HittableWrapper {
     let mut list = HittableList::new();
     let mut boxes1 = HittableList::new();
-    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(SolidColor::new(&Color::new(0.48, 0.83, 0.53))),
+    let ground: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(
+        TextureWrapper::SolidColor(SolidColor::new(&Color::new(0.48, 0.83, 0.53))),
     ))));
     let boxes_per_side = 20;
     for i in 0..boxes_per_side {
@@ -509,7 +510,7 @@ fn final_scene() -> HittableWrapper {
         }
     }
     list.add(Arc::new(HittableWrapper::BvhNode(BvhNode::from_list(&boxes1, 0.0, 1.0))));
-    let light: Arc<Box<dyn Material>> = Arc::new(Box::new(DiffuseLight::new(&Color::new(7, 7, 7))));
+    let light: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::DiffuseLight(DiffuseLight::new(&Color::new(7, 7, 7))));
     list.add(Arc::new(HittableWrapper::XzRect(XzRect::new(
         123.0, 432.0, 147.0, 412.0, 554.0, light,
     ))));
@@ -523,24 +524,24 @@ fn final_scene() -> HittableWrapper {
         0.0,
         1.0,
         50.0,
-        Arc::new(Box::new(Lambertian::new(Color::new(0.7, 0.3, 1)))),
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.7, 0.3, 1)))),
     ))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Point3::new(260, 150, 45),
         50.0,
-        Arc::new(Box::new(Dielectric::new(1.5))),
+        Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5))),
     ))));
 
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Point3::new(0, 150, 145),
         50.0,
-        Arc::new(Box::new(Metal::new(Color::new(0.8, 0.8, 0.9), 1.0))),
+        Arc::new(MaterialWrapper::Metal(Metal::new(Color::new(0.8, 0.8, 0.9), 1.0))),
     ))));
 
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Point3::new(360, 150, 145),
         70.0,
-        Arc::new(Box::new(Dielectric::new(1.5))),
+        Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5))),
     ))));
 
     list.add(Arc::new(HittableWrapper::ConstantMedium(ConstantMedium::from_color(
@@ -549,14 +550,14 @@ fn final_scene() -> HittableWrapper {
         Arc::new(HittableWrapper::Sphere(Sphere::new(
             Point3::new(360, 150, 145),
             70.0,
-            Arc::new(Box::new(Dielectric::new(1.5))),
+            Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5))),
         ))),
     ))));
 
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Point3::new(0, 0, 0),
         5000.0,
-        Arc::new(Box::new(Dielectric::new(1.5))),
+        Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5))),
     ))));
     list.add(Arc::new(HittableWrapper::ConstantMedium(ConstantMedium::from_color(
         &Color::new(1, 1, 1),
@@ -564,12 +565,12 @@ fn final_scene() -> HittableWrapper {
         Arc::new(HittableWrapper::Sphere(Sphere::new(
             Point3::new(0, 0, 0),
             5000.0,
-            Arc::new(Box::new(Dielectric::new(1.5))),
+            Arc::new(MaterialWrapper::Dielectric(Dielectric::new(1.5))),
         ))),
     ))));
 
-    let ground: Arc<Box<dyn Material>> = Arc::new(Box::new(Lambertian::from_pointer(Arc::new(
-        Box::new(Image::from_ppm("earthshit.ppm")),
+    let ground: Arc<MaterialWrapper> = Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(
+        TextureWrapper::Image(Image::from_ppm("earthshit.ppm")),
     ))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Vec3::new(400, 200, 400),
@@ -580,13 +581,13 @@ fn final_scene() -> HittableWrapper {
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
         Point3::new(220, 280, 300),
         80.0,
-        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(TextureWrapper::Noise(
             Noise::new(0.1),
         ))))),
     ))));
 
-    let white: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let white: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
     let mut boxes2 = HittableList::new();
     let ns = 1000;
     for _ in 0..ns {
@@ -609,8 +610,8 @@ fn final_scene() -> HittableWrapper {
 
 fn gen_moving_test() -> HittableWrapper {
     let mut list = HittableList::new();
-    let ground: Arc<Box<dyn Material>> =
-        Arc::new(Box::new(Lambertian::from_pointer(Arc::new(Box::new(
+    let ground: Arc<MaterialWrapper> =
+        Arc::new(MaterialWrapper::Lambertian(Lambertian::from_pointer(Arc::new(TextureWrapper::Checker(
             Checker::from_colors(&Color::new(0.2, 0.3, 0.1), &Color::new(0.9, 0.9, 0.9)),
         )))));
     list.add(Arc::new(HittableWrapper::Sphere(Sphere::new(
@@ -619,7 +620,7 @@ fn gen_moving_test() -> HittableWrapper {
         ground,
     ))));
     let albedo = Color::new(1, 0, 0);
-    let sphere_material = Box::new(Lambertian::new(albedo));
+    let sphere_material = MaterialWrapper::Lambertian(Lambertian::new(albedo));
     let center1 = Vec3::new(2, -1, 2);
 
     let center2 = Vec3::new(2, 7, 2);

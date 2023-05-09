@@ -8,6 +8,24 @@ pub trait Texture: Send + Sync {
     fn value(&self, u: f64, v: f64, p: &Point3) -> Color;
 }
 
+pub enum TextureWrapper {
+    SolidColor(SolidColor),
+    Checker(Checker),
+    Noise(Noise),
+    Image(Image),
+}
+
+impl Texture for TextureWrapper {
+    fn value(&self, u: f64, v: f64, p: &Point3) -> Color {
+        match self {
+            TextureWrapper::SolidColor(obj) => obj.value(u, v, p),
+            TextureWrapper::Checker(obj) => obj.value(u, v, p),
+            TextureWrapper::Noise(obj) => obj.value(u, v, p),
+            TextureWrapper::Image(obj) => obj.value(u, v, p),
+        }
+    }
+}
+
 pub struct SolidColor {
     color_value: Color,
 }
@@ -31,12 +49,12 @@ impl Texture for SolidColor {
 }
 
 pub struct Checker {
-    even: Arc<Box<dyn Texture>>,
-    odd: Arc<Box<dyn Texture>>,
+    even: Arc<TextureWrapper>,
+    odd: Arc<TextureWrapper>,
 }
 
 impl Checker {
-    pub fn new(even: Arc<Box<dyn Texture>>, odd: Arc<Box<dyn Texture>>) -> Checker {
+    pub fn new(even: Arc<TextureWrapper>, odd: Arc<TextureWrapper>) -> Checker {
         Checker {
             even: even.clone(),
             odd: odd.clone(),
@@ -45,8 +63,8 @@ impl Checker {
 
     pub fn from_colors(even: &Color, odd: &Color) -> Checker {
         Checker {
-            even: Arc::new(Box::new(SolidColor::new(even))),
-            odd: Arc::new(Box::new(SolidColor::new(odd))),
+            even: Arc::new(TextureWrapper::SolidColor(SolidColor::new(even))),
+            odd: Arc::new(TextureWrapper::SolidColor(SolidColor::new(odd))),
         }
     }
 }

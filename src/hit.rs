@@ -1,7 +1,7 @@
 use crate::aabb::Aabb;
 use crate::bvh::BvhNode;
 use crate::ray::Ray;
-use crate::texture::{SolidColor, Texture};
+use crate::texture::{SolidColor, TextureWrapper, Texture};
 use crate::vec3::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
 use rand::{thread_rng, Rng};
 use std::f64::consts::PI;
@@ -15,7 +15,7 @@ pub struct HitRecord {
     u: f64,
     v: f64,
     front_face: bool,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
 }
 
 impl HitRecord {
@@ -26,7 +26,7 @@ impl HitRecord {
         u: f64,
         v: f64,
         front_face: bool,
-        material: Arc<Box<dyn Material>>,
+        material: Arc<MaterialWrapper>,
     ) -> HitRecord {
         HitRecord {
             p,
@@ -63,7 +63,7 @@ impl HitRecord {
         return self.front_face;
     }
 
-    pub fn get_material(&self) -> Arc<Box<dyn Material>> {
+    pub fn get_material(&self) -> Arc<MaterialWrapper> {
         Arc::clone(&self.mat_ptr)
     }
 
@@ -144,11 +144,11 @@ impl Hittable for HittableWrapper {
 pub struct Sphere {
     center: Point3,
     radius: f64,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64, mat_ptr: Arc<Box<dyn Material>>) -> Sphere {
+    pub fn new(center: Point3, radius: f64, mat_ptr: Arc<MaterialWrapper>) -> Sphere {
         Sphere {
             center,
             radius,
@@ -216,7 +216,7 @@ pub struct MovingSphere {
     time0: f64,
     time1: f64,
     radius: f64,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
 }
 
 impl MovingSphere {
@@ -226,7 +226,7 @@ impl MovingSphere {
         time0: f64,
         time1: f64,
         radius: f64,
-        mat_ptr: Arc<Box<dyn Material>>,
+        mat_ptr: Arc<MaterialWrapper>,
     ) -> MovingSphere {
         MovingSphere {
             center0,
@@ -298,7 +298,7 @@ pub struct GravitySphere {
     start: Point3,
     time0: f64,
     radius: f64,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
     pub stored: Vec<f64>,
 }
 
@@ -308,7 +308,7 @@ impl GravitySphere {
         start: Point3,
         time0: f64,
         radius: f64,
-        mat_ptr: Arc<Box<dyn Material>>,
+        mat_ptr: Arc<MaterialWrapper>,
     ) -> GravitySphere {
         let mut stored = vec![start.get_y()];
         let incr = 0.001;
@@ -417,7 +417,7 @@ pub struct XyRect {
     y0: f64,
     y1: f64,
     k: f64,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
 }
 
 impl XyRect {
@@ -427,7 +427,7 @@ impl XyRect {
         y0: f64,
         y1: f64,
         k: f64,
-        mat_ptr: Arc<Box<dyn Material>>,
+        mat_ptr: Arc<MaterialWrapper>,
     ) -> XyRect {
         XyRect {
             x0,
@@ -483,7 +483,7 @@ pub struct XzRect {
     y0: f64,
     y1: f64,
     k: f64,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
 }
 
 impl XzRect {
@@ -493,7 +493,7 @@ impl XzRect {
         y0: f64,
         y1: f64,
         k: f64,
-        mat_ptr: Arc<Box<dyn Material>>,
+        mat_ptr: Arc<MaterialWrapper>,
     ) -> XzRect {
         XzRect {
             x0,
@@ -549,7 +549,7 @@ pub struct YzRect {
     y0: f64,
     y1: f64,
     k: f64,
-    mat_ptr: Arc<Box<dyn Material>>,
+    mat_ptr: Arc<MaterialWrapper>,
 }
 
 impl YzRect {
@@ -559,7 +559,7 @@ impl YzRect {
         y0: f64,
         y1: f64,
         k: f64,
-        mat_ptr: Arc<Box<dyn Material>>,
+        mat_ptr: Arc<MaterialWrapper>,
     ) -> YzRect {
         YzRect {
             x0,
@@ -632,8 +632,8 @@ impl Hittable for HittableList {
         let mut hit_anything = false;
         let mut closest_so_far = t_max;
 
-        let temp_mat: Arc<Box<dyn Material>> =
-            Arc::new(Box::new(Metal::new(Vec3::new(0, 0, 0), 0.0)));
+        let temp_mat: Arc<MaterialWrapper> =
+            Arc::new(MaterialWrapper::Metal(Metal::new(Vec3::new(0, 0, 0), 0.0)));
         let mut temp_rec = HitRecord::new(
             Vec3::new(0, 0, 0),
             Vec3::new(0, 0, 0),
@@ -689,7 +689,7 @@ pub struct RectPrism {
 }
 
 impl RectPrism {
-    pub fn new(p0: &Point3, p1: &Point3, mat: Arc<Box<dyn Material>>) -> RectPrism {
+    pub fn new(p0: &Point3, p1: &Point3, mat: Arc<MaterialWrapper>) -> RectPrism {
         let mut sides = HittableList::new();
         sides.add(Arc::new(HittableWrapper::XyRect(XyRect::new(
             p0.get_x(),
@@ -912,7 +912,7 @@ impl Hittable for RotateY {
 #[derive(Clone)]
 pub struct ConstantMedium {
     boundary: Arc<HittableWrapper>,
-    phase_function: Arc<Box<dyn Material>>,
+    phase_function: Arc<MaterialWrapper>,
     neg_inv_density: f64,
 }
 
@@ -920,7 +920,7 @@ impl ConstantMedium {
     pub fn from_color(c: &Color, d: f64, b: Arc<HittableWrapper>) -> ConstantMedium {
         ConstantMedium {
             boundary: b.clone(),
-            phase_function: Arc::new(Box::new(Isotropic::from_color(c))),
+            phase_function: Arc::new(MaterialWrapper::Isotropic(Isotropic::from_color(c))),
             neg_inv_density: -1.0 / d,
         }
     }
@@ -966,13 +966,13 @@ impl Hittable for ConstantMedium {
 
 #[derive(Clone)]
 pub struct Isotropic {
-    albedo: Arc<Box<dyn Texture>>,
+    albedo: Arc<TextureWrapper>,
 }
 
 impl Isotropic {
     pub fn from_color(c: &Color) -> Isotropic {
         Isotropic {
-            albedo: Arc::new(Box::new(SolidColor::new(c))),
+            albedo: Arc::new(TextureWrapper::SolidColor(SolidColor::new(c))),
         }
     }
 }
@@ -993,19 +993,48 @@ pub trait Material: Send + Sync {
     }
 }
 
+pub enum MaterialWrapper {
+    Isotropic(Isotropic),
+    Lambertian(Lambertian),
+    Metal(Metal),
+    Dielectric(Dielectric),
+    DiffuseLight(DiffuseLight),
+}
+
+impl Material for MaterialWrapper {
+    fn emitted(&self, u: f64, v: f64, p: &Point3) -> Color {
+        match self {
+            MaterialWrapper::Isotropic(obj) => obj.emitted(u, v, p),
+            MaterialWrapper::Lambertian(obj) => obj.emitted(u, v, p),
+            MaterialWrapper::Metal(obj) => obj.emitted(u, v, p),
+            MaterialWrapper::Dielectric(obj) => obj.emitted(u, v, p),
+            MaterialWrapper::DiffuseLight(obj) => obj.emitted(u, v, p),
+        }
+    }
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<(Ray, Color)> {
+        match self {
+            MaterialWrapper::Isotropic(obj) => obj.scatter(r_in, rec),
+            MaterialWrapper::Lambertian(obj) => obj.scatter(r_in, rec),
+            MaterialWrapper::Metal(obj) => obj.scatter(r_in, rec),
+            MaterialWrapper::Dielectric(obj) => obj.scatter(r_in, rec),
+            MaterialWrapper::DiffuseLight(obj) => obj.scatter(r_in, rec),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Lambertian {
-    albedo: Arc<Box<dyn Texture>>,
+    albedo: Arc<TextureWrapper>,
 }
 
 impl Lambertian {
     pub fn new(albedo: Color) -> Lambertian {
         Lambertian {
-            albedo: Arc::new(Box::new(SolidColor::new(&albedo))),
+            albedo: Arc::new(TextureWrapper::SolidColor(SolidColor::new(&albedo))),
         }
     }
 
-    pub fn from_pointer(texture: Arc<Box<dyn Texture>>) -> Lambertian {
+    pub fn from_pointer(texture: Arc<TextureWrapper>) -> Lambertian {
         Lambertian {
             albedo: texture.clone(),
         }
@@ -1105,17 +1134,17 @@ impl Material for Dielectric {
 }
 
 pub struct DiffuseLight {
-    emit: Arc<Box<dyn Texture>>,
+    emit: Arc<TextureWrapper>,
 }
 
 impl DiffuseLight {
     pub fn new(c: &Color) -> DiffuseLight {
         DiffuseLight {
-            emit: Arc::new(Box::new(SolidColor::new(c))),
+            emit: Arc::new(TextureWrapper::SolidColor(SolidColor::new(c))),
         }
     }
 
-    pub fn from_pointer(a: Arc<Box<dyn Texture>>) -> DiffuseLight {
+    pub fn from_pointer(a: Arc<TextureWrapper>) -> DiffuseLight {
         DiffuseLight { emit: a.clone() }
     }
 }
