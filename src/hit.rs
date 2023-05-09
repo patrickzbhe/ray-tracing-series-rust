@@ -87,7 +87,7 @@ pub trait Hittable: Send + Sync {
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
 
-#[derive(Clone)]
+
 pub enum HittableWrapper {
     Sphere(Sphere),
     MovingSphere(MovingSphere),
