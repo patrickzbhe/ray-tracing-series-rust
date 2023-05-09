@@ -8,7 +8,7 @@ fn main() {
     let start = Instant::now();
 
     let (world, cam, background) = get_world_cam(SCENE_ID);
-    let config = Config::new(1.0, 500, 500, 50, THREADS);
+    let config = Config::new(1.0, 200, 1, 50, THREADS);
 
     render_scene(world, cam, background, config);
 
