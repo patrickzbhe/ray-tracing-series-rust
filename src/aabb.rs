@@ -1,3 +1,5 @@
+use rand::{thread_rng, Rng};
+
 use crate::ray::Ray;
 use crate::vec3::Point3;
 
@@ -22,6 +24,9 @@ impl Aabb {
 
     pub fn hit(&self, r: &Ray, mut t_min: f64, mut t_max: f64) -> bool {
         // the manual loop unroll LMAO
+        if thread_rng().gen::<f64>() < 0.001 {
+            eprintln!("zz");
+        }
         let intervals = [
             (
                 self.minimum.get_x(),
