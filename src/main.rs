@@ -2,7 +2,7 @@ use ray_tracing_series_rust::world::*;
 use std::time::Instant;
 
 const THREADS: usize = 11;
-const SCENE_ID: usize = 20;
+const SCENE_ID: usize = 9;
 
 fn main() {
     let start = Instant::now();

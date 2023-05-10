@@ -638,6 +638,12 @@ fn gen_moving_test() -> Box<dyn Hittable + Sync> {
     world
 }
 
+fn benchmark_test_scene() -> Box<dyn Hittable + Sync> {
+    Box::new(Sphere::new(Vec3::new(0,0,0), 4.0, Arc::new(Box::new(
+        Lambertian::new(Vec3::new(0.5,0.5,0.5))
+    ))))
+}
+
 pub fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camera>, Color) {
     // TODO: do something smart, load from file maybe?
     let aspect_ratio: f64 = 16.0 / 9.0;
@@ -815,6 +821,27 @@ pub fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<C
         }
         8 => {
             let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene_moving());
+            // camera
+            let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                10.0,
+            ));
+            return (world, cam, background);
+        }
+        9 => {
+            let world = Arc::new(benchmark_test_scene());
             // camera
             let lookfrom = Vec3::new(13, 2, 3);
             let lookat = Vec3::new(0, 0, 0);
