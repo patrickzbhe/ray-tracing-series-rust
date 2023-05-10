@@ -1,7 +1,7 @@
 use crate::aabb::Aabb;
 use crate::bvh::BvhNode;
 use crate::ray::Ray;
-use crate::texture::{SolidColor, TextureWrapper, Texture};
+use crate::texture::{SolidColor, Texture, TextureWrapper};
 use crate::vec3::{random_in_unit_sphere, random_unit_vector, Color, Point3, Vec3};
 use rand::{thread_rng, Rng};
 use std::f64::consts::PI;
@@ -80,13 +80,10 @@ impl HitRecord {
     }
 }
 
-
-
 pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
-
 
 pub enum HittableWrapper {
     Sphere(Sphere),
@@ -122,18 +119,18 @@ impl Hittable for HittableWrapper {
     }
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
         match self {
-            HittableWrapper::Sphere(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::MovingSphere(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::GravitySphere(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::XyRect(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::XzRect(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::YzRect(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::HittableList(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::RectPrism(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::Translate(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::RotateY(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::ConstantMedium(obj) => obj.bounding_box( time0, time1),
-            HittableWrapper::BvhNode(obj) => obj.bounding_box( time0, time1),
+            HittableWrapper::Sphere(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::MovingSphere(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::GravitySphere(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::XyRect(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::XzRect(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::YzRect(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::HittableList(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::RectPrism(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::Translate(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::RotateY(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::ConstantMedium(obj) => obj.bounding_box(time0, time1),
+            HittableWrapper::BvhNode(obj) => obj.bounding_box(time0, time1),
         }
     }
 }
@@ -161,7 +158,6 @@ impl Sphere {
         (phi / (2.0 * PI), theta / PI)
     }
 }
-
 
 impl Hittable for Sphere {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {

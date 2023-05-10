@@ -23,8 +23,7 @@ impl BvhNode {
 
         let mut objects = src_objects.clone();
         let axis: u8 = rng.gen_range(0..2);
-        let box_compare = move |a: &Arc<HittableWrapper>,
-                                b: &Arc<HittableWrapper>| {
+        let box_compare = move |a: &Arc<HittableWrapper>, b: &Arc<HittableWrapper>| {
             let box_a = a.bounding_box(0.0, 0.0).unwrap();
             let box_b = b.bounding_box(0.0, 0.0).unwrap();
             match axis {
@@ -65,8 +64,12 @@ impl BvhNode {
         } else {
             objects.sort_by(box_compare);
             let mid = start + object_span / 2;
-            left = Arc::new(HittableWrapper::BvhNode(BvhNode::new(&objects, start, mid, time0, time1)));
-            right = Arc::new(HittableWrapper::BvhNode(BvhNode::new(&objects, mid, end, time0, time1)));
+            left = Arc::new(HittableWrapper::BvhNode(BvhNode::new(
+                &objects, start, mid, time0, time1,
+            )));
+            right = Arc::new(HittableWrapper::BvhNode(BvhNode::new(
+                &objects, mid, end, time0, time1,
+            )));
         }
 
         let left_box = left
