@@ -87,13 +87,19 @@ fn ray_color(&r: &Ray, background: &Color, world: &HittableWrapper, mut depth: i
 }
 
 fn benchmark_test_scene() -> HittableWrapper {
-    HittableWrapper::Sphere(Sphere::new(
+    let mut inner = HittableWrapper::Sphere(Sphere::new(
         Vec3::new(0, 0, 0),
         4.0,
         Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Vec3::new(
             0.5, 0.5, 0.5,
         )))),
-    ))
+    ));
+    for _ in 0..20 {
+        let mut amit = HittableList::new();
+        amit.add(Arc::new(inner));
+        inner = HittableWrapper::HittableList(amit);
+    }
+    inner
 }
 
 fn gen_random_scene() -> HittableWrapper {
