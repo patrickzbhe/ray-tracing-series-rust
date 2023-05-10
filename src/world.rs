@@ -639,9 +639,17 @@ fn gen_moving_test() -> Box<dyn Hittable + Sync> {
 }
 
 fn benchmark_test_scene() -> Box<dyn Hittable + Sync> {
-    Box::new(Sphere::new(Vec3::new(0,0,0), 4.0, Arc::new(Box::new(
+    let inner = Sphere::new(Vec3::new(0,0,0), 4.0, Arc::new(Box::new(
         Lambertian::new(Vec3::new(0.5,0.5,0.5))
-    ))))
+    )));
+    let mut amit = HittableList::new();
+    amit.add(Arc::new(Box::new(inner)));
+    for _ in 0..19 {
+        let mut tramit = HittableList::new();
+        tramit.add(Arc::new(Box::new(amit)));
+        amit = tramit;
+    }
+    Box::new(amit)
 }
 
 pub fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camera>, Color) {
