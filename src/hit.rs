@@ -287,7 +287,6 @@ impl Hittable for MovingSphere {
     }
 }
 
-#[derive(Clone)]
 pub struct GravitySphere {
     start: Point3,
     time0: f64,
@@ -404,7 +403,7 @@ impl Hittable for GravitySphere {
     }
 }
 
-#[derive(Clone)]
+
 pub struct XyRect {
     x0: f64,
     x1: f64,
@@ -470,7 +469,7 @@ impl Hittable for XyRect {
     }
 }
 
-#[derive(Clone)]
+
 pub struct XzRect {
     x0: f64,
     x1: f64,
@@ -536,7 +535,7 @@ impl Hittable for XzRect {
     }
 }
 
-#[derive(Clone)]
+
 pub struct YzRect {
     x0: f64,
     x1: f64,
@@ -602,7 +601,7 @@ impl Hittable for YzRect {
     }
 }
 
-#[derive(Clone)]
+
 pub struct HittableList {
     objects: Vec<Arc<HittableWrapper>>,
 }
@@ -675,7 +674,7 @@ impl Hittable for HittableList {
     }
 }
 
-#[derive(Clone)]
+
 pub struct RectPrism {
     box_min: Point3,
     box_max: Point3,
@@ -750,7 +749,7 @@ impl Hittable for RectPrism {
     }
 }
 
-#[derive(Clone)]
+
 pub struct Translate {
     obj: Arc<HittableWrapper>,
     offset: Vec3,
@@ -799,7 +798,7 @@ impl Hittable for Translate {
     }
 }
 
-#[derive(Clone)]
+
 pub struct RotateY {
     obj: Arc<HittableWrapper>,
     sin_theta: f64,
@@ -903,7 +902,7 @@ impl Hittable for RotateY {
     }
 }
 
-#[derive(Clone)]
+
 pub struct ConstantMedium {
     boundary: Arc<HittableWrapper>,
     phase_function: Arc<MaterialWrapper>,
@@ -958,7 +957,7 @@ impl Hittable for ConstantMedium {
     }
 }
 
-#[derive(Clone)]
+
 pub struct Isotropic {
     albedo: Arc<TextureWrapper>,
 }
@@ -1016,7 +1015,7 @@ impl Material for MaterialWrapper {
     }
 }
 
-#[derive(Clone)]
+
 pub struct Lambertian {
     albedo: Arc<TextureWrapper>,
 }
@@ -1051,7 +1050,7 @@ impl Material for Lambertian {
     }
 }
 
-#[derive(Clone)]
+
 pub struct Metal {
     albedo: Color,
     fuzz: f64,
