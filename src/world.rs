@@ -89,7 +89,7 @@ fn ray_color(&r: &Ray, background: &Color, world: &HittableWrapper, mut depth: i
 fn benchmark_test_scene() -> HittableWrapper {
     HittableWrapper::Sphere(Sphere::new(
         Vec3::new(0, 0, 0),
-        3.0,
+        4.0,
         Arc::new(MaterialWrapper::Lambertian(Lambertian::new(Vec3::new(
             0.5, 0.5, 0.5,
         )))),
