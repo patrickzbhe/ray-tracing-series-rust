@@ -84,6 +84,96 @@ pub trait Hittable: Send + Sync {
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb>;
 }
 
+pub struct Triangle {
+    v0: Point3,
+    v1: Point3,
+    v2: Point3,
+    normal: Point3,
+    mat_ptr: Arc<Box<dyn Material>>,
+}
+
+impl Triangle {
+    pub fn new(v0: Point3, v1: Point3, v2: Point3, mat_ptr: Arc<Box<dyn Material>>) -> Triangle {
+        let a = v1 - v0;
+        let b = v2 - v0;
+        let normal = a.cross(&b);
+        Triangle {
+            v0,
+            v1,
+            v2,
+            normal,
+            mat_ptr,
+        }
+    }
+}
+
+impl Hittable for Triangle {
+    fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
+        //todo parallel
+
+        if f64::abs(self.normal.dot(r.get_direction())) < 0.0001 {
+            return None;
+        }
+
+        let d = -self.normal.dot(&self.v0);
+        let t = -(self.normal.dot(r.get_origin()) + d) / self.normal.dot(r.get_direction());
+
+        if t < t_min || t > t_max {
+            return None;
+        }
+
+        let p = r.at(t);
+
+        let edge0 = self.v1 - self.v0;
+        let vp0 = p - self.v0;
+
+        let c = edge0.cross(&vp0);
+        if self.normal.dot(&c) < 0.0 {
+            return None;
+        }
+
+        let edge1 = self.v2 - self.v1;
+        let vp1 = p - self.v1;
+
+        let c = edge1.cross(&vp1);
+        if self.normal.dot(&c) < 0.0 {
+            return None;
+        }
+
+        let edge2 = self.v0 - self.v2;
+        let vp2 = p - self.v2;
+
+        let c = edge2.cross(&vp2);
+        if self.normal.dot(&c) < 0.0 {
+            return None;
+        }
+
+        Some(HitRecord::new(
+            r.at(t),
+            self.normal,
+            t,
+            1.0,
+            1.0,
+            true,
+            Arc::clone(&self.mat_ptr),
+        ))
+    }
+    fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
+        let mut min = Point3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
+        let mut max = Point3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);
+        for v in [self.v0, self.v1, self.v2] {
+            min.set_x(f64::min(min.get_x(), v.get_x()));
+            min.set_y(f64::min(min.get_y(), v.get_y()));
+            min.set_z(f64::min(min.get_z(), v.get_z()));
+
+            max.set_x(f64::max(max.get_x(), v.get_x()));
+            max.set_y(f64::max(max.get_y(), v.get_y()));
+            max.set_z(f64::max(max.get_z(), v.get_z()));
+        }
+        Some(Aabb::new(min, max))
+    }
+}
+
 pub struct Sphere {
     center: Point3,
     radius: f64,

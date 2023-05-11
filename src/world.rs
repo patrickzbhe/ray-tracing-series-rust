@@ -2,7 +2,8 @@ use crate::bvh::BvhNode;
 use crate::camera::Camera;
 use crate::hit::{
     ConstantMedium, Dielectric, DiffuseLight, GravitySphere, Hittable, HittableList, Lambertian,
-    Material, Metal, MovingSphere, RectPrism, RotateY, Sphere, Translate, XyRect, XzRect, YzRect,
+    Material, Metal, MovingSphere, RectPrism, RotateY, Sphere, Translate, Triangle, XyRect, XzRect,
+    YzRect,
 };
 use crate::ray::Ray;
 use crate::screen::Screen;
@@ -37,7 +38,13 @@ impl Config {
         assert!(max_depth > 0);
         assert!(threads > 0);
 
-        Config { aspect_ratio, image_width, samples_per_pixel, max_depth, threads }
+        Config {
+            aspect_ratio,
+            image_width,
+            samples_per_pixel,
+            max_depth,
+            threads,
+        }
     }
 }
 
@@ -639,9 +646,11 @@ fn gen_moving_test() -> Box<dyn Hittable + Sync> {
 }
 
 fn benchmark_test_scene() -> Box<dyn Hittable + Sync> {
-    let inner = Sphere::new(Vec3::new(0,0,0), 4.0, Arc::new(Box::new(
-        Lambertian::new(Vec3::new(0.5,0.5,0.5))
-    )));
+    let inner = Sphere::new(
+        Vec3::new(0, 0, 0),
+        4.0,
+        Arc::new(Box::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5)))),
+    );
     let mut amit = HittableList::new();
     amit.add(Arc::new(Box::new(inner)));
     for _ in 0..19 {
@@ -650,6 +659,22 @@ fn benchmark_test_scene() -> Box<dyn Hittable + Sync> {
         amit = tramit;
     }
     Box::new(amit)
+}
+
+fn triangle_test() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    list.add(Arc::new(Box::new(Triangle::new(
+        Point3::new(0, 0, 3),
+        Point3::new(5, 0, -3),
+        Point3::new(0, 5, 0),
+        Arc::new(Box::new(Lambertian::new(Color::new(1, 0, 0)))),
+    ))));
+    list.add(Arc::new(Box::new(Sphere::new(
+        Point3::new(5, 0, 0),
+        1.0,
+        Arc::new(Box::new(Lambertian::new(Color::new(0, 1, 0)))),
+    ))));
+    Box::new(list)
 }
 
 pub fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<Camera>, Color) {
@@ -852,6 +877,27 @@ pub fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<C
             let world = Arc::new(benchmark_test_scene());
             // camera
             let lookfrom = Vec3::new(13, 2, 3);
+            let lookat = Vec3::new(0, 0, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.1;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                20.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                10.0,
+            ));
+            return (world, cam, background);
+        }
+        10 => {
+            let world = Arc::new(triangle_test());
+            // camera
+            let lookfrom = Vec3::new(0, 0, 20);
             let lookat = Vec3::new(0, 0, 0);
             let vup = Vec3::new(0, 1, 0);
             let dist_to_focus = 10.0;

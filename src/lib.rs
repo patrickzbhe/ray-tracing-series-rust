@@ -2,6 +2,7 @@ pub mod aabb;
 pub mod bvh;
 pub mod camera;
 pub mod hit;
+pub mod model;
 pub mod mutil;
 pub mod perlin;
 pub mod ray;
