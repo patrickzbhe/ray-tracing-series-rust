@@ -96,7 +96,7 @@ impl Triangle {
     pub fn new(v0: Point3, v1: Point3, v2: Point3, mat_ptr: Arc<Box<dyn Material>>) -> Triangle {
         let a = v1 - v0;
         let b = v2 - v0;
-        let normal = a.cross(&b);
+        let normal = a.cross(&b).unit();
         Triangle {
             v0,
             v1,
@@ -148,16 +148,19 @@ impl Hittable for Triangle {
             return None;
         }
 
+        let (normal, front_face) = HitRecord::create_normal_face(r, &self.normal);
+
         Some(HitRecord::new(
             r.at(t),
-            self.normal,
+            normal,
             t,
             1.0,
             1.0,
-            true,
+            front_face,
             Arc::clone(&self.mat_ptr),
         ))
     }
+
     fn bounding_box(&self, _time0: f64, _time1: f64) -> Option<Aabb> {
         let mut min = Point3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
         let mut max = Point3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);

@@ -5,6 +5,7 @@ use crate::hit::{
     Material, Metal, MovingSphere, RectPrism, RotateY, Sphere, Translate, Triangle, XyRect, XzRect,
     YzRect,
 };
+use crate::model::TriangleModel;
 use crate::ray::Ray;
 use crate::screen::Screen;
 use crate::texture::{Checker, Image, Noise, SolidColor};
@@ -664,9 +665,9 @@ fn benchmark_test_scene() -> Box<dyn Hittable + Sync> {
 fn triangle_test() -> Box<dyn Hittable + Sync> {
     let mut list = HittableList::new();
     list.add(Arc::new(Box::new(Triangle::new(
-        Point3::new(0, 0, 3),
-        Point3::new(5, 0, -3),
         Point3::new(0, 5, 0),
+        Point3::new(5, 0, 0),
+        Point3::new(0, 0, 0),
         Arc::new(Box::new(Lambertian::new(Color::new(1, 0, 0)))),
     ))));
     list.add(Arc::new(Box::new(Sphere::new(
@@ -674,6 +675,201 @@ fn triangle_test() -> Box<dyn Hittable + Sync> {
         1.0,
         Arc::new(Box::new(Lambertian::new(Color::new(0, 1, 0)))),
     ))));
+    Box::new(list)
+}
+
+fn stanford_dragon() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+
+    let dragon = TriangleModel::load_from_file("./models/dragon_recon/dragon_vrip_res2.ply", 100.0)
+        .to_hittable();
+    //let dragon = TriangleModel::load_from_file("./models/sphere.ply").to_hittable();
+    let dragon = BvhNode::from_list(&dragon, 0.0, 1.0);
+
+    let light: Arc<Box<dyn Material>> = Arc::new(Box::new(DiffuseLight::new(&Color::new(4, 4, 4))));
+    let backdrop = XyRect::new(
+        -100.0,
+        100.0,
+        -100.0,
+        100.0,
+        -20.0,
+        Arc::new(Box::new(Lambertian::new(Color::new(0.8, 0.3, 0.3)))),
+    );
+    let backwall = XyRect::new(
+        -100.0,
+        100.0,
+        -100.0,
+        100.0,
+        20.0,
+        Arc::new(Box::new(Lambertian::new(Color::new(1, 1, 1)))),
+    );
+    let ground = XzRect::new(
+        -40.0,
+        40.0,
+        -40.0,
+        40.0,
+        5.0,
+        Arc::new(Box::new(Metal::new(Color::new(0.3, 0.3, 0.3), 0.02))),
+    );
+    let ceiling = XzRect::new(
+        -100.0,
+        100.0,
+        -100.0,
+        100.0,
+        55.0,
+        Arc::new(Box::new(Metal::new(Color::new(1, 1, 1), 0.0))),
+    );
+    let left_wall = YzRect::new(
+        -100.0,
+        100.0,
+        -100.0,
+        100.0,
+        -30.0,
+        Arc::new(Box::new(Lambertian::new(Color::new(0.3, 0.8, 0.3)))),
+    );
+    let right_wall = YzRect::new(
+        -100.0,
+        100.0,
+        -100.0,
+        100.0,
+        30.0,
+        Arc::new(Box::new(Lambertian::new(Color::new(0.3, 0.3, 0.8)))),
+    );
+
+    let ceiling_light = XzRect::new(-100.0, 100.0, -100.0, 100.0, 55.0, light);
+    list.add(Arc::new(Box::new(dragon)));
+    list.add(Arc::new(Box::new(backdrop)));
+    list.add(Arc::new(Box::new(backwall)));
+    list.add(Arc::new(Box::new(ground)));
+    list.add(Arc::new(Box::new(ceiling)));
+    list.add(Arc::new(Box::new(left_wall)));
+    list.add(Arc::new(Box::new(right_wall)));
+    list.add(Arc::new(Box::new(ceiling_light)));
+    //list.add(Arc::new(Box::new(backwall)));
+
+    Box::new(list)
+}
+
+fn triangular_prism() -> Box<dyn Hittable + Sync> {
+    let mut list = HittableList::new();
+    let red: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.65, 0.05, 0.05))));
+    let white: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.73, 0.73, 0.73))));
+    let green: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(Lambertian::new(Color::new(0.12, 0.45, 0.15))));
+    let light: Arc<Box<dyn Material>> =
+        Arc::new(Box::new(DiffuseLight::new(&Color::new(15, 15, 15))));
+    list.add(Arc::new(Box::new(YzRect::new(
+        0.0, 555.0, 0.0, 555.0, 555.0, green,
+    ))));
+    list.add(Arc::new(Box::new(YzRect::new(
+        0.0, 555.0, 0.0, 555.0, 0.0, red,
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        213.0, 343.0, 227.0, 332.0, 554.0, light,
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XzRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XyRect::new(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        white.clone(),
+    ))));
+
+    // list.add(Arc::new(Box::new(Translate::new(
+    //     &Vec3::new(265, 0, 295),
+    //     Arc::new(Box::new(RotateY::new(
+    //         15.0,
+    //         Arc::new(Box::new(RectPrism::new(
+    //             &Point3::new(0, 0, 0),
+    //             &Point3::new(165, 330, 165),
+    //             white.clone(),
+    //         ))),
+    //     ))),
+    // ))));
+
+    // let mut prism = HittableList::new();
+    // //front
+    // prism.add(Arc::new(Box::new(
+    //         Triangle::new(
+    //             Point3::new(200, 0, 100),
+    //             Point3::new(300, 0, 100),
+    //             Point3::new(250, 250, 150),
+    //             white.clone(),
+    //         ))
+    //     ));
+    // //left
+    // prism.add(Arc::new(Box::new(
+    //     Triangle::new(
+    //         Point3::new(200, 0, 100),
+    //         Point3::new(200, 0, 200),
+    //         Point3::new(250, 250, 150),
+    //         white.clone(),
+    //     ))
+    // ));
+    // //right
+    // prism.add(Arc::new(Box::new(
+    //     Triangle::new(
+    //         Point3::new(300, 0, 100),
+    //         Point3::new(300, 0, 200),
+    //         Point3::new(250, 250, 150),
+    //         white.clone(),
+    //     ))
+    // ));
+    // prism.add(Arc::new(Box::new(
+    //     Triangle::new(
+    //         Point3::new(200, 0, 200),
+    //         Point3::new(300, 0, 200),
+    //         Point3::new(250, 250, 150),
+    //         white.clone(),
+    //     ))
+    // ));
+    // let prism = RotateY::new(20.0, Arc::new(Box::new(prism)));
+    // let prism = Translate::new(&Vec3::new(100,0,350), Arc::new(Box::new(prism)));
+    // list.add(Arc::new(Box::new(prism)));
+
+    // list.add(Arc::new(Box::new(
+    //     Triangle::new(
+    //         Point3::new(100, 0, 200),
+    //         Point3::new(300, 0, 200),
+    //         Point3::new(200, 50, 450),
+    //         white.clone(),
+    //     ))
+    // ));
+
+    list.add(Arc::new(Box::new(Triangle::new(
+        Point3::new(200, 0, 200),
+        Point3::new(300, 0, 200),
+        Point3::new(250, 250, 200),
+        white.clone(),
+    ))));
+    list.add(Arc::new(Box::new(XyRect::new(
+        0.0,
+        300.0,
+        0.0,
+        150.0,
+        201.0,
+        white.clone(),
+    ))));
+    //list.add(Arc::new(Box::new(XyRect::new(350.0,450.0,0.0,250.0,100.0,white.clone()))));
     Box::new(list)
 }
 
@@ -914,6 +1110,49 @@ pub fn get_world_cam(config_num: usize) -> (Arc<Box<dyn Hittable + Sync>>, Arc<C
                 10.0,
             ));
             return (world, cam, background);
+        }
+        11 => {
+            let world = Arc::new(stanford_dragon());
+            // camera
+            let lookfrom = Vec3::new(0, 20, 20);
+            let lookat = Vec3::new(0, 11, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 40.0;
+            let aperture = 0.0;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                60.0,
+                aspect_ratio,
+                aperture,
+                dist_to_focus,
+                0.0,
+                10.0,
+            ));
+            return (world, cam, background);
+        }
+
+        12 => {
+            let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(triangular_prism());
+            // camera
+            let lookfrom = Vec3::new(278, 278, -800);
+            let lookat = Vec3::new(278, 278, 0);
+            let vup = Vec3::new(0, 1, 0);
+            let dist_to_focus = 10.0;
+            let aperture = 0.0;
+            let cam = Arc::new(Camera::new(
+                lookfrom,
+                lookat,
+                vup,
+                40.0,
+                1.0,
+                aperture,
+                dist_to_focus,
+                0.0,
+                1.0,
+            ));
+            return (world, cam, Color::new(0, 0, 0));
         }
         _ => {
             let world: Arc<Box<dyn Hittable + Sync>> = Arc::new(gen_random_scene());

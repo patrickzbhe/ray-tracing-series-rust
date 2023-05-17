@@ -62,7 +62,7 @@ impl BvhNode {
                 right = objects[start].clone();
             }
         } else {
-            objects.sort_by(box_compare);
+            objects[start..start + object_span].sort_by(box_compare);
             let mid = start + object_span / 2;
             left = Arc::new(Box::new(BvhNode::new(&objects, start, mid, time0, time1)));
             right = Arc::new(Box::new(BvhNode::new(&objects, mid, end, time0, time1)));
