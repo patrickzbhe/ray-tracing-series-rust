@@ -10,6 +10,9 @@ Also adding some random stuff (like image buffer, importing/export different fil
 
 Using minimal dependencies (just rand right now).
 
+### PLY Model (Stanford Dragon)
+![Stanford Dragon](/images/stanford_dragon.png)
+
 ## Benchmarking
 ### In One Weekend Final
 #### Set up
