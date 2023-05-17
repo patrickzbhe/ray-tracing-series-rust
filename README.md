@@ -28,7 +28,7 @@ let max_depth = 50;
 |----------------------------|----------|
 | Brute force + stupid stuff | 936.957s |
 | Iterative tracing          | 903.980s |
-| Parallel (self built mspc); 10 threads | 146.440s |
+| Parallel; 10 threads | 146.440s |
 
 ### Next Week Final
 #### Set up
