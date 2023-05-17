@@ -2,14 +2,6 @@
 
 Implementation (+ additional experimentation) of Peter Shirley's [Ray Tracing in One Weekend Series](https://raytracing.github.io/).
 
-# Implementation
-
-Trying to write (somewhat) idiomatic Rust.
-
-Also adding some random stuff (like image buffer, importing/export different file formats, spectral rendering) plus performance optimizations, which I'll benchmark.
-
-Using minimal dependencies (just rand right now).
-
 ### PLY Model (Stanford Dragon)
 ![Stanford Dragon](/images/stanford_dragon.png)
 
